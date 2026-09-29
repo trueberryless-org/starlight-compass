@@ -1,6 +1,6 @@
 {
   "name": "starlight-compass",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "description": "Starlight plugin to review your documentation with typed AI decisions.",
   "author": "trueberryless <trueberryless@gmail.com> (https://felixs.dev)",
