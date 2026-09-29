@@ -1,0 +1,136 @@
+---
+title: Getting Started
+description: Install Starlight Compass and review your first page in the Astro dev toolbar.
+diataxis: tutorial
+---
+
+import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+In this tutorial, you install Starlight Compass, review a page of your Starlight site in the dev toolbar, and declare the page's documentation type so Compass can warn you when it drifts.
+
+:::note
+Starlight Compass is a community plugin and is not affiliated with TypeSafe AI.
+:::
+
+## Prerequisites
+
+- A Starlight website. If you don't have one yet, follow the ["Getting Started"](https://starlight.astro.build/getting-started) guide in the Starlight docs.
+- A TypeSafe API key. Jev is in early access. [Create a key](https://console.typesafe.ai/settings/keys) in the TypeSafe console.
+
+## Install the plugin
+
+<Steps>
+
+1. Install the package:
+
+   <Tabs syncKey="pkg">
+
+   <TabItem label="npm">
+
+   ```sh
+   npm install starlight-compass
+   ```
+
+   </TabItem>
+
+   <TabItem label="pnpm">
+
+   ```sh
+   pnpm add starlight-compass
+   ```
+
+   </TabItem>
+
+   <TabItem label="Yarn">
+
+   ```sh
+   yarn add starlight-compass
+   ```
+
+   </TabItem>
+
+   </Tabs>
+
+2. Add the plugin to your Starlight configuration:
+
+   ```diff lang="js"
+   // astro.config.mjs
+   import starlight from "@astrojs/starlight";
+   import { defineConfig } from "astro/config";
+   +import starlightCompass from "starlight-compass";
+
+   export default defineConfig({
+     integrations: [
+       starlight({
+   +      plugins: [starlightCompass()],
+         title: "My Docs",
+       }),
+     ],
+   });
+   ```
+
+3. Extend your content collection schema so that pages can declare their documentation type:
+
+   ```diff lang="ts"
+   // src/content.config.ts
+   import { docsLoader } from "@astrojs/starlight/loaders";
+   import { docsSchema } from "@astrojs/starlight/schema";
+   import { defineCollection } from "astro:content";
+   +import { compassSchema } from "starlight-compass/schema";
+
+   export const collections = {
+     docs: defineCollection({
+       loader: docsLoader(),
+   -    schema: docsSchema(),
+   +    schema: docsSchema({ extend: compassSchema() }),
+     }),
+   };
+   ```
+
+4. Create a `.env` file in your project root with your API key. Make sure `.env` is listed in your `.gitignore` file.
+
+   ```sh title=".env"
+   TYPESAFE_API_KEY=sk-...
+   ```
+
+</Steps>
+
+## Review your first page
+
+<Steps>
+
+1. Start the development server:
+
+   ```sh
+   npm run dev
+   ```
+
+2. Open any documentation page in your browser and click the compass icon in the Astro dev toolbar at the bottom of the page.
+
+   The Compass window shows the type the page reads like, for example "Reads like a how-to guide (92% confidence)", and suggests declaring it.
+
+3. Declare the suggested type in the frontmatter of the page:
+
+   ```md title="src/content/docs/guides/deploy.md" ins={3}
+   ---
+   title: Deploy your site
+   diataxis: how-to
+   ---
+   ```
+
+4. Save the file. The page reloads, Compass reviews it again, and the suggestion disappears.
+
+5. To see what drift looks like, change the value to `diataxis: reference` and save again.
+
+   The toolbar icon now shows a red dot, and the Compass window reports an error: the page is declared as reference but reads like a how-to guide. Set the value back to `how-to` when you are done.
+
+</Steps>
+
+## Next steps
+
+You reviewed a page while writing it and declared its type.
+From here, you can:
+
+- [Audit every page in CI](/guides/audit-in-ci/) to catch drift in pull requests.
+- Learn [how Compass decides](/concepts/diataxis/) whether a page is a tutorial, a how-to guide, reference or explanation.
+- Browse the [configuration reference](/reference/configuration/).

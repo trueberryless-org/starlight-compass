@@ -1,0 +1,84 @@
+---
+title: Write a custom rule
+description: Review pages against your own criteria, e.g. the frontmatter of another Starlight plugin.
+diataxis: how-to
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+A rule asks typed questions about a page and turns the answers into findings.
+This guide writes a rule that checks whether the `tags` frontmatter field of a page, e.g. added by a tags plugin, matches its content.
+
+:::caution
+The rule API is experimental and may change in minor releases before `1.0`.
+:::
+
+<Steps>
+
+1. Create a function returning a [`CompassRule`](/reference/rules/#compassrule) object:
+
+   ```ts title="compass-rules.ts"
+   import type { CompassRule } from "starlight-compass";
+
+   export function tagsRule(allowedTags: string[]): CompassRule {
+     return {
+       name: "tags",
+       getQuestions(page) {
+         const tags = page.data["tags"];
+         if (!Array.isArray(tags) || tags.length === 0) return;
+
+         return {
+           topic: {
+             type: "choice",
+             instructions: "Which tag best describes the main topic of this page?",
+             options: Object.fromEntries(allowedTags.map((tag) => [tag, null])),
+           },
+         };
+       },
+       getResult(page, answers) {
+         const { topic } = answers;
+         if (topic?.type !== "choice") return { findings: [] };
+
+         const tags = page.data["tags"] as string[];
+         if (tags.includes(topic.choice) || topic.confidence < 0.6) {
+           return { findings: [] };
+         }
+
+         return {
+           findings: [
+             {
+               level: "warning",
+               message: `The page is mostly about \`${topic.choice}\`, which is not one of its tags.`,
+             },
+           ],
+         };
+       },
+     };
+   }
+   ```
+
+   Ask narrow questions and check the answer's confidence before reporting a finding, so that uncertain answers don't produce noise.
+
+2. Add the rule to your configuration. Keep the built-in rules you want to use, as setting `rules` replaces the defaults:
+
+   ```js {3,9}
+   // astro.config.mjs
+   import starlightCompass, { diataxis } from "starlight-compass";
+   import { tagsRule } from "./compass-rules";
+
+   export default defineConfig({
+     integrations: [
+       starlight({
+         plugins: [
+           starlightCompass({ rules: [diataxis(), tagsRule(["cli", "config", "deployment"])] }),
+         ],
+       }),
+     ],
+   });
+   ```
+
+3. Open a page with tags and check the new `tags` section in the Compass dev toolbar window.
+
+</Steps>
+
+Questions of all rules are sent to the provider in a [single request](/concepts/how-it-works/#one-request-per-page), so adding a rule adds almost no latency.

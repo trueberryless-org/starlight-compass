@@ -1,0 +1,75 @@
+---
+title: Providers
+description: The built-in providers and the provider interface of Starlight Compass.
+diataxis: reference
+---
+
+A provider answers the typed questions asked by [rules](/reference/rules/). Learn why providers are separate from rules in [How it works](/concepts/how-it-works/#providers-and-rules).
+
+## `typesafe()`
+
+```js
+import { typesafe } from "starlight-compass";
+
+typesafe({ apiKey: process.env.MY_KEY, model: "jev-1.13.0" });
+```
+
+Queries a [TypeSafe](https://docs.typesafe.ai) System One model, like Jev. This is the default provider.
+
+### `apiKey`
+
+**Type:** `string`  
+**Default:** the `TYPESAFE_API_KEY` [environment variable](/reference/configuration/#environment-variables)
+
+The TypeSafe API key. Prefer the environment variable to keep the key out of your repository.
+
+### `model`
+
+**Type:** `string`  
+**Default:** `"jev-latest"`
+
+The [model](https://docs.typesafe.ai/models) to query. Pin a version for reproducible results.
+
+### `fetch`
+
+**Type:** `typeof fetch`  
+**Default:** `globalThis.fetch`
+
+A custom `fetch` implementation, e.g. to route requests through a proxy.
+
+## `CompassProvider`
+
+:::caution
+The provider API is experimental and may change in minor releases before `1.0`.
+:::
+
+```ts
+interface CompassProvider {
+  name: string;
+  setupHint: string;
+  createClient(context: {
+    env: Record<string, string | undefined>;
+  }): CompassClient | undefined;
+}
+
+interface CompassClient {
+  id: string;
+  ask(request: CompassRequest): Promise<CompassResponse>;
+}
+```
+
+- `name`: a unique name, e.g. `"typesafe"`.
+- `setupHint`: a sentence explaining how to configure the provider, logged when `createClient()` returns `undefined`.
+- `createClient()`: returns a client, or `undefined` when the provider is not configured, e.g. because an API key is missing. `env` includes variables from `.env` files.
+- `id`: identifies the provider and requested model, e.g. `"typesafe/jev-latest"`. Part of the cache key.
+- `ask()`: answers every question of a request in a single call.
+
+### Questions and answers
+
+| Question type | Question fields                          | Answer fields                                    |
+| ------------- | ---------------------------------------- | ------------------------------------------------ |
+| `"boolean"`   | `instructions`, `criteria?: { true, false }` | `probability` (0 to 1)                       |
+| `"choice"`    | `instructions`, `options: Record<string, string \| null>` | `choice`, `probabilities`, `confidence` |
+| `"score"`     | `instructions`, `levels: string[]`       | `score`, `probabilities: number[]`, `confidence` |
+
+A `CompassResponse` has an `answers` map with the same keys as the request's `questions`, and the exact `model` that answered.

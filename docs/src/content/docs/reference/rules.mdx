@@ -1,0 +1,72 @@
+---
+title: Rules
+description: The built-in rules and the rule interface of Starlight Compass.
+diataxis: reference
+---
+
+A rule decides which questions to ask about a page and turns the answers into findings. To write your own, follow [Write a custom rule](/guides/write-a-custom-rule/).
+
+## `diataxis()`
+
+```js
+import { diataxis } from "starlight-compass";
+
+diataxis({ minConfidence: 0.7 });
+```
+
+Classifies pages as one of the four [Diátaxis](https://diataxis.fr) documentation types. See [Diátaxis in Compass](/concepts/diataxis/) for how it decides.
+
+Pages using the `splash` template, pages with `diataxis: false` and empty pages are skipped.
+
+### Findings
+
+| Level     | Reported when                                                                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------------- |
+| `error`   | The page declares a [`diataxis`](/reference/configuration/#diataxis) type and confidently reads like another type. |
+| `warning` | The page likely mixes several documentation types.                                                            |
+| `info`    | The page declares no type, or matches no type with enough confidence.                                          |
+
+### `minConfidence`
+
+**Type:** `number` (between `0` and `1`)  
+**Default:** `0.6`
+
+The confidence below which a classification is reported as unclear (`info`) instead of as a mismatch (`error`).
+
+## `CompassRule`
+
+:::caution
+The rule API is experimental and may change in minor releases before `1.0`.
+:::
+
+```ts
+interface CompassRule {
+  name: string;
+  getQuestions(page: CompassPage): Record<string, CompassQuestion> | undefined;
+  getResult(
+    page: CompassPage,
+    answers: Record<string, CompassAnswer>
+  ): { findings: CompassFinding[]; summary?: string };
+}
+```
+
+- `name`: a unique name, shown in reports and in the dev toolbar.
+- `getQuestions()`: returns the [questions](/reference/providers/#questions-and-answers) to ask, or `undefined` to skip the page.
+- `getResult()`: receives the answers under the same keys and returns findings and an optional one-sentence summary.
+
+### `CompassPage`
+
+| Property   | Type                      | Description                                         |
+| ---------- | ------------------------- | --------------------------------------------------- |
+| `body`     | `string`                  | The Markdown or MDX source, without frontmatter.    |
+| `data`     | `Record<string, unknown>` | The validated frontmatter.                          |
+| `filePath` | `string \| undefined`     | The source file path relative to the project root.  |
+| `id`       | `string`                  | The content collection entry ID.                    |
+| `pathname` | `string`                  | The URL pathname of the page.                       |
+
+### `CompassFinding`
+
+| Property  | Type                               | Description                                                                 |
+| --------- | ---------------------------------- | --------------------------------------------------------------------------- |
+| `level`   | `"error" \| "warning" \| "info"`   | Audits report errors and warnings. Info findings only appear in the dev toolbar. |
+| `message` | `string`                           | A full sentence. Text in backticks is rendered as code.                     |

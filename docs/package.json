@@ -1,0 +1,32 @@
+{
+  "name": "starlight-compass-docs",
+  "version": "0.0.0",
+  "license": "MIT",
+  "description": "Documentation for the Starlight Compass plugin.",
+  "author": "trueberryless <trueberryless@gmail.com> (https://felixs.dev)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "astro": "astro",
+    "build": "astro build",
+    "dev": "astro dev",
+    "preview": "astro preview",
+    "start": "astro dev"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.42.4",
+    "astro": "^7.3.5",
+    "sharp": "^0.35.4",
+    "starlight-compass": "workspace:*"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "homepage": "https://starlight-compass.netlify.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trueberryless-org/starlight-compass.git",
+    "directory": "docs"
+  },
+  "bugs": "https://github.com/trueberryless-org/starlight-compass/issues"
+}

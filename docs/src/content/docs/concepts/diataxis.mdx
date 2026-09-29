@@ -1,0 +1,35 @@
+---
+title: Diátaxis in Compass
+description: Why Compass starts with Diátaxis, and how the diataxis rule decides.
+diataxis: explanation
+---
+
+## Why Diátaxis
+
+[Diátaxis](https://diataxis.fr) identifies four needs of documentation users and a form of documentation for each:
+
+- **Tutorials** for learning, by doing something meaningful under guidance.
+- **How-to guides** for achieving a goal the reader already has.
+- **Reference** for looking up facts about the machinery.
+- **Explanation** for understanding the context and the reasons.
+
+Most structural problems in documentation come from blurring these forms, like a tutorial that keeps stopping to explain background, or a guide that lists every option. The pressure to blur them comes back with every change, which is why a check that runs [while writing and in CI](/concepts/how-it-works/#when-compass-runs) helps more than a one-off review.
+
+These docs follow Diátaxis too: the sidebar groups a tutorial, how-to guides, reference and explanation, and every page declares its type.
+
+## How the rule decides
+
+The [`diataxis` rule](/reference/rules/#diataxis) asks two questions per page:
+
+- A **choice** between the four types, each described with a short rubric taken from the Diátaxis compass: does the page serve action or cognition, and study or work?
+- A **yes/no question** asking whether the page mixes several types in a way that would read better as separate pages.
+
+The rule compares the answer with the type declared in the [`diataxis` frontmatter field](/reference/configuration/#diataxis):
+
+- A **confident** answer that differs from the declared type is an error, because the page drifted from its purpose.
+- An answer **below [`minConfidence`](/reference/rules/#minconfidence)** is never an error. Real pages often sit near a boundary, and a check that cries wolf gets disabled.
+- A high probability of **mixing** types is a warning rather than an error, as splitting a page is a judgment call.
+
+## Declared and detected types
+
+Declaring a type is optional, but it changes what Compass can tell you. Without a declaration, Compass can only describe the page. With one, it knows the page's _intent_ and can report when the content stops matching it. That is why the dev toolbar suggests declaring the detected type once the classification is confident.

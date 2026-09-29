@@ -1,0 +1,39 @@
+---
+title: How it works
+description: Why Starlight Compass uses typed AI decisions, when it runs, and what it sends.
+diataxis: explanation
+---
+
+## Decisions instead of text
+
+Most AI tools generate text. For reviewing documentation, text is hard to act on: it has to be read, it can be wrong in convincing ways, and a build cannot fail on it reliably.
+
+Compass asks _typed questions_ instead: pick one of these options, rate this on a scale, or answer yes or no. Models built for this, like TypeSafe's [Jev](https://docs.typesafe.ai), answer with calibrated probabilities and a confidence score in well under a second. The answer is always one of the options you offered, and the confidence tells Compass whether to report a finding or stay quiet.
+
+## Providers and rules
+
+Compass separates _what_ to ask from _who_ answers:
+
+- [Rules](/reference/rules/) decide which questions to ask about a page and how to interpret the answers, like the [`diataxis`](/concepts/diataxis/) rule.
+- [Providers](/reference/providers/) answer the questions, like [`typesafe()`](/reference/providers/#typesafe).
+
+Typed questions are not specific to one vendor. As more models of this kind appear, a new provider can answer the same rules. Rules can also come from outside Compass, for example to review the frontmatter of other Starlight plugins, as shown in [Write a custom rule](/guides/write-a-custom-rule/).
+
+## When Compass runs
+
+A build should stay fast, deterministic and offline. Compass only calls a provider in two situations:
+
+- **In the dev toolbar**, when the provider is configured, e.g. through a `TYPESAFE_API_KEY` in a `.env` file. Each page you open is reviewed once, and again whenever its content changes. This is where feedback is most useful: while you write.
+- **In audits**, when `astro build` runs with [`STARLIGHT_COMPASS_AUDIT=1`](/reference/configuration/#starlight_compass_audit), typically [in CI](/guides/audit-in-ci/).
+
+Regular builds and deployments never call a provider and need no API key.
+
+## One request per page
+
+The questions of every rule are sent together in a single request per page, and responses are cached in Astro's [`cacheDir`](https://docs.astro.build/en/reference/configuration-reference/#cachedir) by a hash of the request. A page is only sent again when its content, the rules or the model change.
+
+The cost stays small: at the time of writing, Jev charges $0.042 per million input tokens, so reviewing a 3,000-token page costs around a hundredth of a cent.
+
+## What is sent
+
+For each page, Compass sends the title, the description, and the Markdown or MDX source without frontmatter to the provider. Check your provider's terms, e.g. [TypeSafe's legal documents](https://docs.typesafe.ai/legal), before reviewing private documentation.

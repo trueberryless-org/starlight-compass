@@ -1,0 +1,75 @@
+---
+title: Audit your docs in CI
+description: Fail pull requests whose pages drift from their declared documentation type.
+diataxis: how-to
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+An audit reviews every page at the end of a build and fails the build when it finds errors.
+Audits only run when the `STARLIGHT_COMPASS_AUDIT` environment variable is set, so local builds and deployments stay offline.
+
+<Steps>
+
+1. Declare the intended type of your pages with the [`diataxis` frontmatter field](/reference/configuration/#diataxis).
+
+2. Add your TypeSafe API key as a secret named `TYPESAFE_API_KEY` in your repository settings.
+
+3. Add a workflow that builds your docs with `STARLIGHT_COMPASS_AUDIT=1`. For example, with GitHub Actions and pnpm:
+
+   ```yaml title=".github/workflows/docs-audit.yaml"
+   name: Docs audit
+
+   on:
+     pull_request:
+
+   jobs:
+     audit:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v5
+         - uses: pnpm/action-setup@v4
+         - uses: actions/setup-node@v5
+           with:
+             cache: pnpm
+         - run: pnpm install
+         - uses: actions/cache@v4
+           with:
+             path: node_modules/.astro/starlight-compass
+             key: starlight-compass-${{ github.sha }}
+             restore-keys: starlight-compass-
+         - run: pnpm build
+           env:
+             STARLIGHT_COMPASS_AUDIT: 1
+             TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+   ```
+
+   Caching the `starlight-compass` directory in Astro's [`cacheDir`](https://docs.astro.build/en/reference/configuration-reference/#cachedir) means only changed pages are sent to the provider.
+
+4. Open a pull request. The build log groups errors and warnings by file, for example:
+
+   ```txt
+     ╭─ src/content/docs/guides/deploy.md
+     ·
+   ✗ | Declared as a tutorial but reads like a how-to guide (84% confidence).
+     · ╰── diataxis
+
+     ╭─ src/content/docs/concepts/routing.md
+     ·
+   ⚠ | Mixes several documentation types and could be split into separate pages (72% probability).
+     · ╰── diataxis
+
+   ╭─                                         ─╮
+   · Found 1 error and 1 warning in 2 files. ·
+   ╰─                                         ─╯
+   ```
+
+   In GitHub Actions, the same findings also appear as a table in the job summary, with links to the files.
+
+</Steps>
+
+To also fail on warnings, or to only report findings, set the [`audit.failOn`](/reference/configuration/#auditfailon) option.
+
+:::caution
+Secrets are not available to workflows triggered by pull requests from forks. Without an API key, a requested audit fails the build. Skip the job for forks, e.g. with `if: github.event.pull_request.head.repo.full_name == github.repository`.
+:::

@@ -1,0 +1,83 @@
+---
+title: Configuration
+description: All options, environment variables and frontmatter fields of Starlight Compass.
+diataxis: reference
+---
+
+## Plugin options
+
+Pass options to `starlightCompass()` in your Starlight configuration:
+
+```js {5-8}
+// astro.config.mjs
+starlight({
+  plugins: [
+    starlightCompass({
+      audit: { failOn: "warning" },
+      devToolbar: true,
+      provider: typesafe({ model: "jev-1.13.0" }),
+      rules: [diataxis({ minConfidence: 0.7 })],
+    }),
+  ],
+});
+```
+
+### `audit`
+
+**Type:** `object`
+
+Options for [audits](/concepts/how-it-works/#when-compass-runs).
+
+#### `audit.failOn`
+
+**Type:** `"error" | "warning" | "never"`  
+**Default:** `"error"`
+
+The lowest finding level that fails an audit. With `"never"`, audits only report findings.
+
+### `devToolbar`
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Whether to add the Compass app to the Astro dev toolbar. The app is only added when the [provider](#provider) is configured.
+
+### `provider`
+
+**Type:** [`CompassProvider`](/reference/providers/#compassprovider)  
+**Default:** `typesafe()`
+
+The provider answering the questions of every rule. See [Providers](/reference/providers/).
+
+### `rules`
+
+**Type:** [`CompassRule[]`](/reference/rules/#compassrule)  
+**Default:** `[diataxis()]`
+
+The rules reviewing every page. Setting this option replaces the default rules. See [Rules](/reference/rules/).
+
+## Environment variables
+
+Compass reads environment variables from the shell and from `.env`, `.env.local`, `.env.[mode]` and `.env.[mode].local` files in the project root, like [Vite](https://vite.dev/guide/env-and-mode.html#env-files). Variables set in the shell take precedence.
+
+### `STARLIGHT_COMPASS_AUDIT`
+
+Set to `1` or `true` to run an audit at the end of `astro build`. The build fails if the provider is not configured.
+
+### `TYPESAFE_API_KEY`
+
+The API key read by the [`typesafe()`](/reference/providers/#typesafe) provider.
+
+## Frontmatter
+
+Extend your docs schema with `compassSchema()` from `starlight-compass/schema` to add the following fields:
+
+```ts title="src/content.config.ts"
+docsSchema({ extend: compassSchema() });
+```
+
+### `diataxis`
+
+**Type:** `"tutorial" | "how-to" | "reference" | "explanation" | false`
+
+The documentation type the page is meant to be, checked by the [`diataxis` rule](/reference/rules/#diataxis). Set it to `false` to skip the rule for this page.

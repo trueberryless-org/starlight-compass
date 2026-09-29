@@ -1,0 +1,51 @@
+---
+title: Starlight Compass
+description: Keep your Starlight docs oriented with fast, typed AI reviews, starting with the Diátaxis framework.
+head:
+  - tag: title
+    content: Starlight Compass
+  - tag: style
+    content: |
+      .hero-html {
+        --size: 12rem;
+        font-size: var(--size);
+        justify-content: center;
+        line-height: var(--size);
+      }
+template: splash
+editUrl: false
+hero:
+  tagline: Keep your Starlight docs oriented with fast, typed AI reviews, starting with the Diátaxis framework.
+  image:
+    html: "🧭"
+  actions:
+    - text: Get Started
+      link: /getting-started/
+      icon: right-arrow
+    - text: How it works
+      link: /concepts/how-it-works/
+      icon: information
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+<CardGrid stagger>
+  <Card title="Feedback while you write" icon="pencil">
+    The Compass app in the Astro dev toolbar reviews the page you are viewing
+    and flags drift as soon as you save.
+  </Card>
+  <Card title="Audits in CI" icon="approve-check">
+    Opt-in audits [fail pull requests](/guides/audit-in-ci/) that turn a
+    tutorial into a reference page. Deployments never call an API.
+  </Card>
+  <Card title="Diátaxis built in" icon="seti:folder">
+    The [`diataxis` rule](/reference/rules/#diataxis) classifies pages as
+    tutorials, how-to guides, reference or explanation.
+  </Card>
+  <Card title="Provider-agnostic" icon="puzzle">
+    Starts with [TypeSafe's Jev](/reference/providers/#typesafe), and is built
+    around [providers and rules](/concepts/how-it-works/#providers-and-rules)
+    you can swap or write yourself.
+  </Card>
+</CardGrid>

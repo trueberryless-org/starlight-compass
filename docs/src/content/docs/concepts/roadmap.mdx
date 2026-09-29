@@ -1,0 +1,24 @@
+---
+title: Roadmap
+description: Ideas for future rules, providers and reader-facing features.
+diataxis: explanation
+---
+
+Compass starts with the Diátaxis rule and the TypeSafe provider. The [provider and rule design](/concepts/how-it-works/#providers-and-rules) leaves room for much more. These ideas are not implemented yet. Feedback on [GitHub](https://github.com/trueberryless-org/starlight-compass/issues) helps decide what comes next.
+
+## More rules
+
+- **Frontmatter of other plugins.** Suggest tags for `starlight-tags` from its allowed tags, check the topic of pages for `starlight-sidebar-topics`, or review blog post metadata for `starlight-blog`.
+- **Sidebar placement.** Report pages that sit in a sidebar group they don't belong to.
+- **Quality scores.** Rate pages against rubrics like "states its prerequisites" or "has a runnable example".
+- **Duplicates.** Find pages covering the same topic that should be merged or cross-linked.
+
+## More providers
+
+Any model that answers typed questions with probabilities can become a provider, including large language models with structured output as a fallback.
+
+## For readers
+
+- **Documentation type badges** telling readers upfront what kind of page they are on.
+- **Ask the docs without hallucinations.** Readers type a question, and a model picks the best matching pages from a search shortlist, returning links rather than generated answers, and saying so when the docs have no answer.
+- **Feedback triage** that classifies free-text feedback into typos, bugs, missing information or confusing content.
