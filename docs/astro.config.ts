@@ -13,6 +13,10 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Starlight Compass",
+      credits: true,
+      components: {
+        Footer: "./src/components/Footer.astro",
+      },
       head: [
         {
           tag: "meta",
