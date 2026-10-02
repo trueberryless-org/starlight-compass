@@ -9,13 +9,16 @@ import { Steps } from "@astrojs/starlight/components";
 An audit reviews every page at the end of a build and fails the build when it finds errors.
 Audits only run when the `STARLIGHT_COMPASS_AUDIT` environment variable is set, so local builds and deployments stay offline.
 
+## Prerequisites
+
+- A Starlight site with [Compass and a provider set up](/getting-started/), where pages declare their type with the [`diataxis` frontmatter field](/reference/configuration/#diataxis).
+- The API key of your [provider](/reference/providers/), stored as a secret in your repository settings. The workflow below assumes a TypeSafe key named `TYPESAFE_API_KEY`. Use the variable of your provider otherwise, e.g. `OPENAI_API_KEY`.
+
+## Add the audit to your workflow
+
 <Steps>
 
-1. Declare the intended type of your pages with the [`diataxis` frontmatter field](/reference/configuration/#diataxis).
-
-2. Add your TypeSafe API key as a secret named `TYPESAFE_API_KEY` in your repository settings.
-
-3. Add a workflow that builds your docs with `STARLIGHT_COMPASS_AUDIT=1`. For example, with GitHub Actions and pnpm:
+1. Add a workflow that builds your docs with `STARLIGHT_COMPASS_AUDIT=1`. For example, with GitHub Actions and pnpm:
 
    ```yaml title=".github/workflows/docs-audit.yaml"
    name: Docs audit
@@ -46,7 +49,7 @@ Audits only run when the `STARLIGHT_COMPASS_AUDIT` environment variable is set, 
 
    Caching the `starlight-compass` directory in Astro's [`cacheDir`](https://docs.astro.build/en/reference/configuration-reference/#cachedir) means only changed pages are sent to the provider.
 
-4. Open a pull request. The build log groups errors and warnings by file, for example:
+2. Open a pull request. The build log groups errors and warnings by file, for example:
 
    ```txt
      ╭─ src/content/docs/guides/deploy.md
@@ -68,7 +71,9 @@ Audits only run when the `STARLIGHT_COMPASS_AUDIT` environment variable is set, 
 
 </Steps>
 
-To also fail on warnings, or to only report findings, set the [`audit.failOn`](/reference/configuration/#auditfailon) option.
+## Choose what fails the build
+
+An audit fails on errors by default. To also fail on warnings, or to only report findings, set the [`audit.failOn`](/reference/configuration/#auditfailon) option. Add more [rules](/reference/rules/) to audit more than the documentation type, e.g. [`quality()`](/reference/rules/#quality) or [`duplicates()`](/reference/rules/#duplicates), which report warnings.
 
 :::caution
 Secrets are not available to workflows triggered by pull requests from forks. Without an API key, a requested audit fails the build. Skip the job for forks, e.g. with `if: github.event.pull_request.head.repo.full_name == github.repository`.

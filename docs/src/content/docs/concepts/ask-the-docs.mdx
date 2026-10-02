@@ -1,0 +1,29 @@
+---
+title: How ask the docs works
+description: Why ask the docs links to pages instead of generating answers, and what happens to a question.
+diataxis: explanation
+---
+
+Chat assistants in documentation answer with generated text. That text can be wrong in convincing ways, and it can contradict your docs. Ask the docs works differently: it only decides which pages of your documentation answer a question, and shows links to them. It cannot invent an answer, and it says so when your docs have none. This follows the same idea as the rest of Compass: [typed decisions instead of text](/concepts/how-it-works/#decisions-instead-of-text).
+
+## What happens to a question
+
+1. **The browser shortlists pages.** It searches the [Pagefind](https://pagefind.app) index that Starlight builds for the question. Pagefind only finds pages containing every word of a query, which fails for questions written as sentences. So Compass searches the whole question and each of its keywords, and ranks pages by how many searches find them and how high.
+2. **The endpoint rates the shortlist.** The browser sends the question and the title and start of each shortlisted page to your server. Your [provider](/reference/providers/) answers one yes-or-no question per page: does this page help to answer the question?
+3. **Matching pages are returned as links.** Pages above [`minProbability`](/reference/configuration/#askminprobability) are shown, most likely first and limited by [`maxPages`](/reference/configuration/#askmaxpages). If no page passes, the reader is told that the docs don't seem to answer the question.
+
+The endpoint only returns pages the browser sent, and the browser only renders links to your own site, so a manipulated question or response cannot send readers elsewhere.
+
+## Why a shortlist
+
+Rating every page of a large site for every question would be slow and expensive, and providers see a limited amount of text per request. A text search is fast and free, so it narrows the pages down, and the provider only judges the few that remain. The trade-off is that a page the search does not find cannot be returned, even if it would answer the question.
+
+## Why the thresholds are low
+
+Models see only the start of each page, so they are conservative: a page that answers a question perfectly often scores between 30% and 60%. The default `minProbability` of `0.3` accounts for this. The ranking matters more than the absolute value, because pages that do not answer the question score far lower than the ones that do.
+
+## What it costs and what it sends
+
+Every question makes one request that rates up to a handful of pages, so it costs a fraction of a cent with models like Jev. The request contains what the reader typed and the start of the shortlisted pages. Questions are not cached or stored by Compass.
+
+Because every reader can trigger requests, the endpoint is protected: it rejects requests from other origins and [limits](/reference/configuration/#askratelimit) the questions per client address. Learn how to [set it up](/guides/ask-the-docs/) and [limit the cost](/guides/ask-the-docs/#limit-the-cost).

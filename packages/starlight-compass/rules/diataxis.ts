@@ -1,3 +1,4 @@
+import { formatPercentage } from "../libs/answers";
 import type { CompassAnswer, CompassQuestion } from "../libs/provider";
 import type { CompassFinding, CompassPage, CompassRule } from "../libs/rule";
 
@@ -126,10 +127,6 @@ function getDeclaredType(page: CompassPage) {
   const declared = page.data["diataxis"];
 
   return isDiataxisType(declared) ? declared : undefined;
-}
-
-function formatPercentage(value: number) {
-  return `${Math.round(value * 100)}%`;
 }
 
 export type DiataxisType = (typeof DIATAXIS_TYPES)[number];

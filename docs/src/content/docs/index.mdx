@@ -1,6 +1,6 @@
 ---
 title: Starlight Compass
-description: Keep your Starlight docs oriented with fast, typed AI reviews, starting with the Diátaxis framework.
+description: Review your Starlight docs with fast, typed AI decisions, and help readers find answers without hallucinations.
 head:
   - tag: title
     content: Starlight Compass
@@ -15,7 +15,7 @@ head:
 template: splash
 editUrl: false
 hero:
-  tagline: Keep your Starlight docs oriented with fast, typed AI reviews, starting with the Diátaxis framework.
+  tagline: Review your docs and help readers find answers with fast, typed AI decisions.
   image:
     html: "🧭"
   actions:
@@ -39,13 +39,20 @@ import { Card, CardGrid } from "@astrojs/starlight/components";
     Opt-in audits [fail pull requests](/guides/audit-in-ci/) that turn a
     tutorial into a reference page. Deployments never call an API.
   </Card>
-  <Card title="Diátaxis built in" icon="seti:folder">
-    The [`diataxis` rule](/reference/rules/#diataxis) classifies pages as
-    tutorials, how-to guides, reference or explanation.
+  <Card title="Nine built-in rules" icon="seti:folder">
+    Classify pages with [Diátaxis](/reference/rules/#diataxis), rate them
+    against [quality rubrics](/reference/rules/#quality), find
+    [duplicates](/reference/rules/#duplicates) and check the frontmatter of
+    plugins like `starlight-tags` and `starlight-blog`.
   </Card>
   <Card title="Provider-agnostic" icon="puzzle">
-    Starts with [TypeSafe's Jev](/reference/providers/#typesafe), and is built
-    around [providers and rules](/concepts/how-it-works/#providers-and-rules)
-    you can swap or write yourself.
+    Use [TypeSafe's Jev](/reference/providers/#typesafe) or
+    [any OpenAI-compatible model](/reference/providers/#openaicompatible), or write your own
+    [provider or rule](/concepts/how-it-works/#providers-and-rules).
+  </Card>
+  <Card title="Helpful for readers" icon="open-book">
+    Show [documentation type badges](/guides/documentation-type-badges/), let
+    readers [ask the docs](/guides/ask-the-docs/) from a sparkle button without
+    hallucinations, and [triage their feedback](/guides/triage-feedback/).
   </Card>
 </CardGrid>

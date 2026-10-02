@@ -8,12 +8,14 @@ diataxis: reference
 
 Pass options to `starlightCompass()` in your Starlight configuration:
 
-```js {5-8}
+```js {5-10}
 // astro.config.mjs
 starlight({
   plugins: [
     starlightCompass({
+      ask: true,
       audit: { failOn: "warning" },
+      badges: true,
       devToolbar: true,
       provider: typesafe({ model: "jev-1.13.0" }),
       rules: [diataxis({ minConfidence: 0.7 })],
@@ -21,6 +23,47 @@ starlight({
   ],
 });
 ```
+
+### `ask`
+
+**Type:** `boolean | object`  
+**Default:** `false`
+
+Adds an "Ask the docs" button with a sparkle icon next to the search field, which opens a form linking readers to the pages that answer their question. See [Let readers ask the docs](/guides/ask-the-docs/).
+
+The option needs an [Astro adapter](https://docs.astro.build/en/guides/on-demand-rendering/) and a [`typesafe()`](/reference/providers/#typesafe) or [`openaiCompatible()`](/reference/providers/#openaicompatible) provider. It adds an endpoint and replaces Starlight's `Search` component, so the button is skipped with a warning when you already override it. Set it to `true` to use the defaults, or pass an object:
+
+```js
+ask: { maxPages: 3, minProbability: 0.3, rateLimit: 20, route: "/api/ask" }
+```
+
+#### `ask.maxPages`
+
+**Type:** `number`  
+**Default:** `3`
+
+The maximum number of pages returned for a question, most likely first.
+
+#### `ask.minProbability`
+
+**Type:** `number` (between `0` and `1`)  
+**Default:** `0.3`
+
+The probability that a page helps to answer the question above which it is returned.
+
+#### `ask.rateLimit`
+
+**Type:** `number`  
+**Default:** `20`
+
+The maximum number of questions per client address and minute. The limit lives in the memory of the server, so hosts with several instances limit each of them. Use `0` to disable it.
+
+#### `ask.route`
+
+**Type:** `string`  
+**Default:** `"/api/ask"`
+
+The pathname of the endpoint answering questions.
 
 ### `audit`
 
@@ -35,19 +78,25 @@ Options for [audits](/concepts/how-it-works/#when-compass-runs).
 
 The lowest finding level that fails an audit. With `"never"`, audits only report findings.
 
+### `badges`
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Whether to show a [documentation type badge](/guides/documentation-type-badges/) below the title of pages declaring a [`diataxis`](#diataxis) type. The badge replaces Starlight's `PageTitle` component, so it is skipped with a warning when you already override it.
+
 ### `devToolbar`
 
 **Type:** `boolean`  
 **Default:** `true`
 
-Whether to add the Compass app to the Astro dev toolbar. The app is only added when the [provider](#provider) is configured.
+Whether to add the Compass app to the Astro dev toolbar. The app is only added when the [provider](#provider) is configured, e.g. when its API key is set.
 
 ### `provider`
 
-**Type:** [`CompassProvider`](/reference/providers/#compassprovider)  
-**Default:** `typesafe()`
+**Type:** [`CompassProvider`](/reference/providers/#compassprovider)
 
-The provider answering the questions of every rule. See [Providers](/reference/providers/).
+The provider answering the questions of every rule, e.g. [`typesafe()`](/reference/providers/#typesafe) or [`openaiCompatible()`](/reference/providers/#openaicompatible). The option is required, because Compass has no default provider. See [Providers](/reference/providers/) and [Getting Started](/getting-started/).
 
 ### `rules`
 
@@ -62,11 +111,15 @@ Compass reads environment variables from the shell and from `.env`, `.env.local`
 
 ### `STARLIGHT_COMPASS_AUDIT`
 
-Set to `1` or `true` to run an audit at the end of `astro build`. The build fails if the provider is not configured.
+Set to `1` or `true` to run an audit at the end of `astro build`. The build fails if the provider is not configured, e.g. because its API key is missing.
 
 ### `TYPESAFE_API_KEY`
 
 The API key read by the [`typesafe()`](/reference/providers/#typesafe) provider.
+
+### `OPENAI_API_KEY`
+
+The API key read by the [`openaiCompatible()`](/reference/providers/#openaicompatible) provider.
 
 ## Frontmatter
 
@@ -80,4 +133,4 @@ docsSchema({ extend: compassSchema() });
 
 **Type:** `"tutorial" | "how-to" | "reference" | "explanation" | false`
 
-The documentation type the page is meant to be, checked by the [`diataxis` rule](/reference/rules/#diataxis). Set it to `false` to skip the rule for this page.
+The documentation type the page is meant to be, checked by the [`diataxis` rule](/reference/rules/#diataxis) and shown in a [badge](/guides/documentation-type-badges/). Set it to `false` to skip the rule for this page. The [`quality()`](/reference/rules/#quality) rule also uses it to pick the rubrics that apply to the page.

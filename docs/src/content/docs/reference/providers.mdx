@@ -4,7 +4,16 @@ description: The built-in providers and the provider interface of Starlight Comp
 diataxis: reference
 ---
 
-A provider answers the typed questions asked by [rules](/reference/rules/). Learn why providers are separate from rules in [How it works](/concepts/how-it-works/#providers-and-rules).
+A provider answers the typed questions asked by [rules](/reference/rules/). Compass has no default provider: choose one with the [`provider`](/reference/configuration/#provider) option, as shown in [Getting Started](/getting-started/). Learn why providers are separate from rules in [How Compass works](/concepts/how-it-works/#providers-and-rules).
+
+Providers are named after the API they speak, not after the model behind it:
+
+| Provider                                    | API                                                                                          | Use it with                                                   |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [`typesafe()`](#typesafe)                   | The [System One](https://docs.typesafe.ai) API, which returns calibrated typed answers.      | TypeSafe's Jev.                                               |
+| [`openaiCompatible()`](#openaicompatible)   | The OpenAI chat completions API with structured outputs, which many services implement.      | OpenAI, OpenRouter, DeepSeek, Ollama, vLLM and similar.       |
+
+[Write your own provider](#compassprovider) for any other API.
 
 ## `typesafe()`
 
@@ -14,7 +23,7 @@ import { typesafe } from "starlight-compass";
 typesafe({ apiKey: process.env.MY_KEY, model: "jev-1.13.0" });
 ```
 
-Queries a [TypeSafe](https://docs.typesafe.ai) System One model, like Jev. This is the default provider.
+Queries a [TypeSafe](https://docs.typesafe.ai) System One model, like Jev. These models answer typed questions directly with calibrated probabilities, which is what [rules](/reference/rules/) ask for. Learn how to [set it up](/getting-started/typesafe/).
 
 ### `apiKey`
 
@@ -35,7 +44,56 @@ The [model](https://docs.typesafe.ai/models) to query. Pin a version for reprodu
 **Type:** `typeof fetch`  
 **Default:** `globalThis.fetch`
 
-A custom `fetch` implementation, e.g. to route requests through a proxy.
+A custom `fetch` implementation, e.g. to route requests through a proxy. The [`ask`](/reference/configuration/#ask) option recreates the provider on the server without it.
+
+## `openaiCompatible()`
+
+```js
+import { openaiCompatible } from "starlight-compass";
+
+// OpenAI
+openaiCompatible({ model: "gpt-4o-mini" });
+
+// Any other service or server that implements the API
+openaiCompatible({ baseUrl: "https://openrouter.ai/api/v1", model: "deepseek/deepseek-chat" });
+
+// A local model, e.g. served by Ollama. No API key needed.
+openaiCompatible({ baseUrl: "http://localhost:11434/v1", model: "llama3.1" });
+```
+
+Queries any model through the [chat completions API](https://platform.openai.com/docs/api-reference/chat) with structured outputs. Many services and servers implement this API, so one provider covers all of them: you only choose the `baseUrl` and the `model`. Learn how to [set it up](/getting-started/openai-compatible/). Compass asks for the probabilities as JSON, then validates them, normalizes them and turns them into the same [answers](#questions-and-answers) as any other provider.
+
+:::caution
+Chat models state probabilities they have not calibrated, and they can change between model versions. Use [`typesafe()`](#typesafe) when you fail builds on findings, and treat this provider as a fallback for reviews in the dev toolbar or with [`failOn: "never"`](/reference/configuration/#auditfailon).
+:::
+
+### `apiKey`
+
+**Type:** `string`  
+**Default:** the `OPENAI_API_KEY` [environment variable](/reference/configuration/#environment-variables)
+
+The API key of the service. Prefer the environment variable to keep the key out of your repository. Without a key, the provider is only configured when you set a custom `baseUrl`, as local servers don't need one.
+
+### `baseUrl`
+
+**Type:** `string`  
+**Default:** `"https://api.openai.com/v1"`
+
+The base URL of the API, without `/chat/completions`.
+
+### `model`
+
+**Type:** `string`  
+**Default:** `"gpt-4o-mini"`
+
+The model to query. It must support structured outputs. Pin a dated version for reproducible results.
+
+### `fetch`
+
+**Type:** `typeof fetch`  
+**Default:** `globalThis.fetch`
+
+A custom `fetch` implementation, e.g. to route requests through a proxy. The [`ask`](/reference/configuration/#ask) option recreates the provider on the server without it.
 
 ## `CompassProvider`
 
@@ -46,6 +104,7 @@ The provider API is experimental and may change in minor releases before `1.0`.
 ```ts
 interface CompassProvider {
   name: string;
+  serialization?: { factory: "typesafe" | "openaiCompatible"; options: unknown };
   setupHint: string;
   createClient(context: {
     env: Record<string, string | undefined>;
@@ -59,6 +118,7 @@ interface CompassClient {
 ```
 
 - `name`: a unique name, e.g. `"typesafe"`.
+- `serialization`: describes how to recreate a built-in provider in the server bundle. The [`ask`](/reference/configuration/#ask) option needs it, so custom providers only work with the [manual setup](/guides/set-up-ask-the-docs-yourself/).
 - `setupHint`: a sentence explaining how to configure the provider, logged when `createClient()` returns `undefined`.
 - `createClient()`: returns a client, or `undefined` when the provider is not configured, e.g. because an API key is missing. `env` includes variables from `.env` files.
 - `id`: identifies the provider and requested model, e.g. `"typesafe/jev-latest"`. Part of the cache key.

@@ -2,25 +2,25 @@ import { describe, expect, test } from "vitest";
 
 import type { CompassAnswer } from "../../libs/provider";
 import { diataxis, getDiataxisResult } from "../../rules/diataxis";
-import { getTestPage } from "./utils";
+import { getTestContext, getTestPage } from "./utils";
 
 const options = { minConfidence: 0.6 };
 
 describe("diataxis", () => {
   test("asks about the type and mixing of documentation types", () => {
-    expect(Object.keys(diataxis().getQuestions(getTestPage()) ?? {})).toEqual(["mixed", "type"]);
+    expect(Object.keys(diataxis().getQuestions(getTestPage(), getTestContext()) ?? {})).toEqual(["mixed", "type"]);
   });
 
   test("skips splash pages, excluded pages and empty pages", () => {
     const rule = diataxis();
 
-    expect(rule.getQuestions(getTestPage({ data: { template: "splash" } }))).toBeUndefined();
-    expect(rule.getQuestions(getTestPage({ data: { diataxis: false } }))).toBeUndefined();
-    expect(rule.getQuestions(getTestPage({ body: "  \n" }))).toBeUndefined();
+    expect(rule.getQuestions(getTestPage({ data: { template: "splash" } }), getTestContext())).toBeUndefined();
+    expect(rule.getQuestions(getTestPage({ data: { diataxis: false } }), getTestContext())).toBeUndefined();
+    expect(rule.getQuestions(getTestPage({ body: "  \n" }), getTestContext())).toBeUndefined();
   });
 
   test("reads the declared type from the frontmatter", () => {
-    const result = diataxis().getResult(getTestPage({ data: { diataxis: "tutorial" } }), getAnswers("how-to", 0.9));
+    const result = diataxis().getResult(getTestPage({ data: { diataxis: "tutorial" } }), getAnswers("how-to", 0.9), getTestContext());
 
     expect(result.findings.map(({ level }) => level)).toEqual(["error"]);
   });

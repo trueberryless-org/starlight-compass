@@ -1,4 +1,5 @@
 import { throwPluginError } from "../libs/error";
+import { fetchWithRetry } from "../libs/http";
 import type {
   CompassAnswer,
   CompassProvider,
@@ -9,7 +10,6 @@ import type {
 
 const TYPESAFE_ENDPOINT = "https://api.typesafe.ai/v1/systemone";
 const TYPESAFE_API_KEY_ENV = "TYPESAFE_API_KEY";
-const MAX_ATTEMPTS = 4;
 const RETRYABLE_STATUSES = new Set([429, 529]);
 
 /**
@@ -23,6 +23,10 @@ export function typesafe(options?: TypesafeOptions): CompassProvider {
 
   return {
     name: "typesafe",
+    serialization: {
+      factory: "typesafe",
+      options: { apiKey: options?.apiKey, model: options?.model },
+    },
     setupHint: `Set the \`${TYPESAFE_API_KEY_ENV}\` environment variable, e.g. in a \`.env\` file, or pass the \`apiKey\` option to \`typesafe()\`.`,
     createClient({ env }) {
       const apiKey = options?.apiKey ?? env[TYPESAFE_API_KEY_ENV];
@@ -54,26 +58,24 @@ export async function askTypesafe(
     state: request.state,
   });
 
-  for (let attempt = 1; ; attempt++) {
-    const response = await _fetch(TYPESAFE_ENDPOINT, {
+  const response = await fetchWithRetry(
+    _fetch,
+    TYPESAFE_ENDPOINT,
+    {
       body,
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       method: "POST",
-    });
+    },
+    RETRYABLE_STATUSES
+  );
 
-    if (response.ok)
-      return fromTypesafeResponse((await response.json()) as TypesafeResponse);
+  if (response.ok)
+    return fromTypesafeResponse((await response.json()) as TypesafeResponse);
 
-    if (RETRYABLE_STATUSES.has(response.status) && attempt < MAX_ATTEMPTS) {
-      await wait(500 * 2 ** (attempt - 1));
-      continue;
-    }
-
-    throwTypesafeError(response.status, await response.text());
-  }
+  throwTypesafeError(response.status, await response.text());
 }
 
 function toTypesafeQuestion(question: CompassQuestion) {
@@ -129,10 +131,6 @@ function fromTypesafeAnswer(answer: TypesafeAnswer): CompassAnswer {
   }
 }
 
-function wait(delay: number) {
-  return new Promise((resolve) => setTimeout(resolve, delay));
-}
-
 function throwTypesafeError(status: number, body: string): never {
   if (status === 401) {
     throwPluginError(
@@ -151,7 +149,7 @@ export interface TypesafeOptions {
    * @default process.env.TYPESAFE_API_KEY
    */
   apiKey?: string;
-  /** A custom `fetch` implementation, e.g. to route requests through a proxy. */
+  /** A custom `fetch` implementation, e.g. to route requests through a proxy. Not used by the `ask` option. */
   fetch?: typeof fetch;
   /**
    * The model to query. Pin a version like `jev-1.13.0` for reproducible results.

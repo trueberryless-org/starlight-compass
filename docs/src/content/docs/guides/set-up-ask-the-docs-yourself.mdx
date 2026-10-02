@@ -1,0 +1,58 @@
+---
+title: Set up ask the docs yourself
+description: Use your own endpoint and page for ask the docs, e.g. to use a custom provider or a serverless function.
+diataxis: how-to
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+The [`ask` option](/guides/ask-the-docs/) sets everything up for you. Use the building blocks directly when you need a custom provider, a serverless function instead of an Astro adapter, or the form on a page instead of a button.
+
+## Prerequisites
+
+- A Starlight site with [Compass and a provider set up](/getting-started/).
+- A [provider](/reference/providers/) with an API key.
+- A place to run server code, like an [Astro adapter](https://docs.astro.build/en/guides/on-demand-rendering/) or serverless functions.
+
+## Create the endpoint and the form
+
+<Steps>
+
+1. Create an endpoint with [`createAskHandler()`](/reference/handlers-and-components/#createaskhandler):
+
+   ```ts title="src/pages/api/ask.ts"
+   import type { APIRoute } from "astro";
+   import { createAskHandler } from "starlight-compass/handlers";
+
+   export const prerender = false;
+
+   const handler = createAskHandler({ provider: myProvider });
+
+   export const POST: APIRoute = ({ request }) => handler(request);
+   ```
+
+   The handler takes a `Request` and returns a `Response`, so it also works as a serverless function, e.g. a Netlify function.
+
+2. Add the [`AskDocs`](/reference/handlers-and-components/#askdocs) component to a page:
+
+   ```mdx title="src/content/docs/ask.mdx"
+   ---
+   title: Ask the docs
+   ---
+
+   import AskDocs from "starlight-compass/components/AskDocs.astro";
+
+   <AskDocs endpoint="/api/ask" />
+   ```
+
+3. Build your site and run `astro preview`, then ask a question on the page.
+
+</Steps>
+
+## Protect the endpoint
+
+The handler has no request limits, unlike the endpoint of the `ask` option. Every question makes one provider request, so protect it before you publish it:
+
+- Add rate limiting in front of the endpoint, e.g. with your host's firewall rules.
+- Lower [`maxCandidates`](/reference/handlers-and-components/#maxcandidates) and the `candidates` prop of the component.
+- Only allow requests from your own site, e.g. by checking the `Origin` header.

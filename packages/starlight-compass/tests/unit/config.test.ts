@@ -1,11 +1,12 @@
 import { describe, expect, test } from "vitest";
 
 import { validateConfig } from "../../libs/config";
+import { typesafe } from "../../providers/typesafe";
 import { diataxis } from "../../rules/diataxis";
 
 describe("validateConfig", () => {
   test("applies defaults", () => {
-    const config = validateConfig(undefined);
+    const config = validateConfig({ provider: typesafe() });
 
     expect(config.audit).toEqual({ failOn: "error" });
     expect(config.devToolbar).toBe(true);
@@ -13,11 +14,16 @@ describe("validateConfig", () => {
     expect(config.rules.map((rule) => rule.name)).toEqual(["diataxis"]);
   });
 
+  test("throws without a provider", () => {
+    expect(() => validateConfig(undefined)).toThrow("Expected a provider, e.g. `typesafe()` or `openaiCompatible()`.");
+    expect(() => validateConfig({})).toThrow("Expected a provider");
+  });
+
   test("throws on an invalid provider", () => {
-    expect(() => validateConfig({ provider: "typesafe" })).toThrow("Expected a provider, e.g. `typesafe()`.");
+    expect(() => validateConfig({ provider: "typesafe" })).toThrow("Expected a provider");
   });
 
   test("throws on duplicate rule names", () => {
-    expect(() => validateConfig({ rules: [diataxis(), diataxis()] })).toThrow("Every rule must have a unique name.");
+    expect(() => validateConfig({ provider: typesafe(), rules: [diataxis(), diataxis()] })).toThrow("Every rule must have a unique name.");
   });
 });

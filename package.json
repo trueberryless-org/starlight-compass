@@ -10,6 +10,7 @@
     "build": "pnpm --filter starlight-compass-docs build",
     "check": "pnpm --filter starlight-compass-docs astro sync && astro check --noSync",
     "dev": "pnpm --filter starlight-compass-docs dev",
+    "preview": "pnpm --filter starlight-compass-docs preview",
     "format": "prettier . --write --cache --ignore-unknown",
     "test": "pnpm --filter starlight-compass test",
     "version": "pnpm changeset version && pnpm i --no-frozen-lockfile"

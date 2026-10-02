@@ -1,17 +1,26 @@
 import { vi } from "vitest";
 
 import type { CompassClient, CompassResponse } from "../../libs/provider";
-import type { CompassPage } from "../../libs/rule";
+import type { CompassPage, CompassRuleContext } from "../../libs/rule";
 
 export function getTestPage(page?: Partial<CompassPage>): CompassPage {
   return {
     body: "Run `npm run build` and upload the `dist/` directory.",
     data: { title: "Deploy" },
     filePath: "src/content/docs/guides/deploy.md",
+    headings: [],
     id: "guides/deploy",
+    locale: undefined,
     pathname: "/guides/deploy/",
+    sidebar: undefined,
     ...page,
   };
+}
+
+export function getTestContext(
+  pages: CompassPage[] = [getTestPage()]
+): CompassRuleContext {
+  return { pages };
 }
 
 export function getTestClient(options?: {

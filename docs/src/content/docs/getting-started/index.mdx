@@ -1,0 +1,90 @@
+---
+title: Install Compass
+description: Add the plugin to a Starlight site and let pages declare their documentation type, before you pick a provider.
+diataxis: tutorial
+---
+
+import { Steps, Tabs, TabItem, LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+In this tutorial, you install Starlight Compass, prepare your content collection, and choose the provider that answers its questions. Then you [review your first page](/getting-started/review-your-first-page/).
+
+## Prerequisites
+
+A Starlight website. If you don't have one yet, follow the ["Getting Started"](https://starlight.astro.build/getting-started) guide in the Starlight docs.
+
+## Install the plugin
+
+<Steps>
+
+1. Install the package:
+
+   <Tabs syncKey="pkg">
+
+   <TabItem label="npm">
+
+   ```sh
+   npm install starlight-compass
+   ```
+
+   </TabItem>
+
+   <TabItem label="pnpm">
+
+   ```sh
+   pnpm add starlight-compass
+   ```
+
+   </TabItem>
+
+   <TabItem label="Yarn">
+
+   ```sh
+   yarn add starlight-compass
+   ```
+
+   </TabItem>
+
+   </Tabs>
+
+2. Extend your content collection schema so that pages can declare their documentation type:
+
+   ```diff lang="ts"
+   // src/content.config.ts
+   import { docsLoader } from "@astrojs/starlight/loaders";
+   import { docsSchema } from "@astrojs/starlight/schema";
+   import { defineCollection } from "astro:content";
+   +import { compassSchema } from "starlight-compass/schema";
+
+   export const collections = {
+     docs: defineCollection({
+       loader: docsLoader(),
+   -    schema: docsSchema(),
+   +    schema: docsSchema({ extend: compassSchema() }),
+     }),
+   };
+   ```
+
+</Steps>
+
+## Choose a provider
+
+Compass sends its questions about your pages to a [provider](/reference/providers/), which you add to your Starlight configuration in the next step. Choose the one that fits you:
+
+<CardGrid>
+  <LinkCard
+    title="Set up TypeSafe"
+    description="Use Jev, a model built to answer typed questions with calibrated probabilities. Recommended for audits."
+    href="/getting-started/typesafe/"
+  />
+  <LinkCard
+    title="Set up an OpenAI-compatible model"
+    description="Use OpenAI, OpenRouter, DeepSeek or a local model through the chat completions API."
+    href="/getting-started/openai-compatible/"
+  />
+</CardGrid>
+
+Need another API? [Write your own provider](/guides/write-a-custom-provider/).
+
+:::note
+Starlight Compass is a community plugin and is not affiliated with any provider.
+:::

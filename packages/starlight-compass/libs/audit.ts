@@ -26,7 +26,12 @@ export async function runAudit(pages: CompassPage[], context: AuditContext) {
   let reviews: CompassReview[];
   try {
     reviews = await mapWithConcurrency(sortedPages, CONCURRENCY, (page) =>
-      reviewPage(page, { cache, client, rules: config.rules })
+      reviewPage(page, {
+        cache,
+        client,
+        pages: sortedPages,
+        rules: config.rules,
+      })
     );
   } finally {
     await writeCompassCache(cacheDir, cache);

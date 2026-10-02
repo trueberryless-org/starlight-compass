@@ -8,8 +8,20 @@ export interface CompassProvider {
   createClient(context: CompassProviderContext): CompassClient | undefined;
   /** A unique name for the provider, e.g. `typesafe`. */
   name: string;
+  /**
+   * Describes how to recreate the provider in the server bundle, where code like the route of the `ask` option runs
+   * without access to the Astro configuration. Providers without it cannot be used there.
+   */
+  serialization?: CompassProviderSerialization;
   /** A sentence explaining how to configure the provider, logged when `createClient()` returns `undefined`. */
   setupHint: string;
+}
+
+export interface CompassProviderSerialization {
+  /** The name of a built-in provider factory to call with the `options`. */
+  factory: "openaiCompatible" | "typesafe";
+  /** The JSON-serializable options of the factory. */
+  options: unknown;
 }
 
 export interface CompassProviderContext {

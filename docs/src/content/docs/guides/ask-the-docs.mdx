@@ -1,0 +1,53 @@
+---
+title: Let readers ask the docs
+description: Add a sparkle button that links readers to the pages answering their question, without generated answers.
+diataxis: how-to
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+Readers often know what they want but not what the docs call it. With the `ask` option, a sparkle button next to the search field opens a form for a question and returns links to the pages that answer it. It never generates text, so it cannot invent an answer, and it says so when the docs don't have one. Read [how it works](/concepts/ask-the-docs/) for details.
+
+## Prerequisites
+
+- An [Astro adapter](https://docs.astro.build/en/guides/on-demand-rendering/), because the endpoint answering questions runs on a server and the API key must not reach the browser.
+- An API key for a [provider](/reference/providers/). The `ask` option supports [`typesafe()`](/reference/providers/#typesafe) and [`openaiCompatible()`](/reference/providers/#openaicompatible).
+
+## Enable ask the docs
+
+<Steps>
+
+1. Enable the [`ask`](/reference/configuration/#ask) option:
+
+   ```js title="astro.config.mjs" {5}
+   starlight({
+     plugins: [
+       starlightCompass({
+         provider: typesafe(),
+         ask: true,
+       }),
+     ],
+   });
+   ```
+
+2. Set the API key of your provider, e.g. `TYPESAFE_API_KEY`, as an environment variable of your host. To try the form locally, put it in a `.env` file next to your `astro.config.mjs`.
+
+3. Build your site and run `astro preview`. Click the sparkle button next to the search field and ask a question.
+
+</Steps>
+
+The shortlist of pages comes from the [Pagefind](https://pagefind.app) index that Starlight builds, so the button only works on built sites. In the dev server, it reports that search is unavailable.
+
+Compass adds an endpoint at `/api/ask` and replaces Starlight's `Search` component to show the button. Change the endpoint and the results with the [`ask` options](/reference/configuration/#ask). If you already override `Search`, Compass skips the button and logs a warning. Render `starlight-compass/components/AskButton.astro` from your override instead.
+
+## Limit the cost
+
+Every question makes one provider request that rates up to `maxCandidates` pages, so the cost per question is small but not zero.
+
+With the `ask` option, the endpoint rejects requests from other origins and limits every client address to 20 questions per minute. Change this with [`ask.rateLimit`](/reference/configuration/#askratelimit). The limit lives in the memory of the server, so hosts with several instances limit each of them. Add rate limiting at your host for strict guarantees.
+
+To use a custom provider, a serverless function or a page instead of the button, [set it up yourself](/guides/set-up-ask-the-docs-yourself/).
+
+## Change the labels
+
+The labels of the component are [Starlight UI strings](https://starlight.astro.build/guides/i18n/#using-ui-translations) starting with `starlightCompass.ask.`. Override them in your `src/content/i18n/<locale>.json` files, e.g. `starlightCompass.ask.open` for the label of the button.

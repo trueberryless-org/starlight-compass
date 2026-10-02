@@ -1,0 +1,52 @@
+---
+import Default from "@astrojs/starlight/components/PageTitle.astro";
+
+import { isDiataxisType } from "../rules/diataxis";
+
+const { entry } = Astro.locals.starlightRoute;
+const type = entry.data["diataxis"];
+const t = Astro.locals.t as (key: string) => string;
+---
+
+<Default {...Astro.props}>
+  <slot />
+</Default>
+{isDiataxisType(type) && (
+  <p
+    class="compass-badge"
+    data-type={type}
+    title={t(`starlightCompass.badge.${type}.description`)}
+  >
+    {t(`starlightCompass.badge.${type}`)}
+  </p>
+)}
+
+<style>
+  .compass-badge {
+    --compass-badge-color: var(--sl-color-gray-2);
+    align-items: center;
+    border: 1px solid var(--compass-badge-color);
+    border-radius: 999rem;
+    color: var(--compass-badge-color);
+    display: inline-flex;
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    margin-top: 0.75rem;
+    padding: 0.35em 0.8em;
+    text-transform: uppercase;
+  }
+  .compass-badge[data-type="tutorial"] {
+    --compass-badge-color: var(--sl-color-green-high);
+  }
+  .compass-badge[data-type="how-to"] {
+    --compass-badge-color: var(--sl-color-blue-high);
+  }
+  .compass-badge[data-type="reference"] {
+    --compass-badge-color: var(--sl-color-orange-high);
+  }
+  .compass-badge[data-type="explanation"] {
+    --compass-badge-color: var(--sl-color-purple-high);
+  }
+</style>

@@ -4,7 +4,30 @@ description: The built-in rules and the rule interface of Starlight Compass.
 diataxis: reference
 ---
 
-A rule decides which questions to ask about a page and turns the answers into findings. To write your own, follow [Write a custom rule](/guides/write-a-custom-rule/).
+A rule decides which questions to ask about a page and turns the answers into findings. Add rules with the [`rules`](/reference/configuration/#rules) option. To write your own, follow [Write a custom rule](/guides/write-a-custom-rule/).
+
+```js
+import starlightCompass, { diataxis, metadata, quality, typesafe } from "starlight-compass";
+
+starlightCompass({
+  provider: typesafe(),
+  rules: [diataxis(), metadata(), quality()],
+});
+```
+
+| Rule                              | Reviews                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| [`diataxis()`](#diataxis)         | The documentation type of every page.                                    |
+| [`quality()`](#quality)           | Pages against rubrics like "states its prerequisites".                   |
+| [`metadata()`](#metadata)         | The title and description of every page.                                 |
+| [`unfinished()`](#unfinished)     | Pages with TODOs, placeholders or stub content.                          |
+| [`duplicates()`](#duplicates)     | Pages covering the same topic without linking to each other.             |
+| [`sidebar()`](#sidebar)           | Pages sitting in a sidebar group they don't belong to.                   |
+| [`tags()`](#tags)                 | Tags from a list of allowed tags, e.g. for `starlight-tags`.             |
+| [`topics()`](#topics)             | The topic of pages, e.g. for `starlight-sidebar-topics`.                 |
+| [`blog()`](#blog)                 | The metadata of blog posts, e.g. for `starlight-blog`.                   |
+
+Every rule skips pages using the `splash` template and empty pages. Options named `flagBelow` and `flagAbove` are probability thresholds between `0` and `1`.
 
 ## `diataxis()`
 
@@ -33,6 +56,229 @@ Pages using the `splash` template, pages with `diataxis: false` and empty pages 
 
 The confidence below which a classification is reported as unclear (`info`) instead of as a mismatch (`error`).
 
+## `quality()`
+
+```js
+import { quality } from "starlight-compass";
+
+quality({
+  rubrics: [
+    "clarity",
+    "prerequisites",
+    {
+      id: "troubleshooting",
+      label: "covers common errors",
+      instructions: "Does this page explain how to fix the errors readers are likely to run into?",
+      diataxis: ["how-to"],
+      minScore: 1.5,
+    },
+  ],
+});
+```
+
+Rates pages against rubrics. Every rubric is a [score question](/reference/providers/#questions-and-answers) with levels from "does not do this" to "does this clearly and completely", and pages scoring below the rubric's minimum get a finding.
+
+### `rubrics`
+
+**Type:** `(QualityRubric | string)[]`  
+**Default:** `["clarity", "prerequisites", "runnable-example"]`
+
+The rubrics rating every page. Use the name of a built-in rubric or define your own.
+
+| Built-in rubric    | Restricted to        | Asks whether the page …                                           |
+| ------------------ | -------------------- | ----------------------------------------------------------------- |
+| `clarity`          |                      | is written clearly and explains terms.                            |
+| `next-steps`       | how-to, tutorial     | tells the reader what to do or read next.                         |
+| `prerequisites`    | how-to, tutorial     | states what the reader needs before starting.                     |
+| `runnable-example` | how-to, tutorial     | has a complete example a reader can copy and run.                 |
+| `scannable`        |                      | uses headings, short paragraphs and lists to be easy to scan.     |
+
+Rubrics restricted to documentation types only apply to pages that declare one of them in the [`diataxis`](/reference/configuration/#diataxis) frontmatter field.
+
+### `QualityRubric`
+
+| Property       | Type                          | Description                                                                                                   |
+| -------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `id`           | `string`                      | A unique identifier.                                                                                          |
+| `instructions` | `string`                      | What to score, phrased as a question about the page.                                                          |
+| `label`        | `string`                      | A verb phrase for findings, e.g. `states its prerequisites`. Defaults to the `id`.                            |
+| `levels`       | `string[]`                    | Descriptions of the score levels from lowest to highest. Defaults to three generic levels.                    |
+| `minScore`     | `number`                      | The lowest passing score as an index into `levels`. Score answers are probability-weighted, so `1.5` is valid. Defaults to `1`. |
+| `level`        | `"error" \| "warning" \| "info"` | The level of findings. Defaults to `"warning"`.                                                             |
+| `diataxis`     | `DiataxisType[]`              | Restricts the rubric to pages declaring one of these types.                                                   |
+
+## `metadata()`
+
+```js
+import { metadata } from "starlight-compass";
+
+metadata({ flagBelow: 0.5 });
+```
+
+Checks that the title describes what the page covers and that the description summarizes the page instead of repeating the title. Pages without a `description` get a warning without asking the provider about it.
+
+### `flagBelow`
+
+**Type:** `number`  
+**Default:** `0.5`
+
+The probability that the title or the description fits the page below which it is reported.
+
+## `unfinished()`
+
+```js
+import { unfinished } from "starlight-compass";
+
+unfinished({ flagAbove: 0.6 });
+```
+
+Reports pages containing TODO or FIXME notes, lorem ipsum, "coming soon" sections or other placeholders, and stubs that announce a topic without explaining it.
+
+### `flagAbove`
+
+**Type:** `number`  
+**Default:** `0.6`
+
+The probability of unfinished content above which a page is reported.
+
+## `duplicates()`
+
+```js
+import { duplicates } from "starlight-compass";
+
+duplicates({ maxCandidates: 3, minSimilarity: 0.25 });
+```
+
+Finds pages covering the same topic that neither link to each other nor were merged. A cheap text similarity (TF-IDF over titles, descriptions, headings and content) shortlists the most similar pages of the same locale, and the provider only decides about these pairs. Pairs that already link to each other are skipped. Each page reports the duplicates it finds, so both pages of a pair usually show a finding.
+
+In the dev toolbar, only pages you opened since starting the dev server are compared. Audits compare all pages.
+
+### `flagAbove`
+
+**Type:** `number`  
+**Default:** `0.8`
+
+The probability that two pages cover the same topic above which they are reported.
+
+### `maxCandidates`
+
+**Type:** `number`  
+**Default:** `3`
+
+The maximum number of similar pages to ask the provider about for every page.
+
+### `minSimilarity`
+
+**Type:** `number`  
+**Default:** `0.25`
+
+The text similarity between two pages below which the provider is not asked about them. Lower it to find more distant duplicates, at the cost of more questions.
+
+## `sidebar()`
+
+```js
+import { sidebar } from "starlight-compass";
+
+sidebar({ flagBelow: 0.3 });
+```
+
+Asks whether a page belongs in the sidebar group that contains it, given the labels of the group and of the pages next to it. Pages that are not in a sidebar group, e.g. top-level links, are skipped.
+
+### `flagBelow`
+
+**Type:** `number`  
+**Default:** `0.3`
+
+The probability that a page belongs to its group below which it is reported.
+
+## `tags()`
+
+```js
+import { tags } from "starlight-compass";
+
+tags({
+  tags: {
+    cli: "Command line tools and their options",
+    config: "Configuration files and options",
+    deployment: "Publishing the site",
+  },
+});
+```
+
+Suggests tags from a list of allowed tags that are missing in the `tags` frontmatter of a page, and reports declared tags that don't seem to fit. Use the same tags as the [`starlight-tags`](https://github.com/frostybee/starlight-tags) configuration, or any other plugin that reads a `tags` frontmatter field. Compass asks one yes-or-no question per tag.
+
+### `tags`
+
+**Type:** `string[] | Record<string, string>`
+
+The allowed tags, either as a list or as a map of tags to descriptions. Descriptions help the provider understand what a tag means.
+
+### `suggestAbove`
+
+**Type:** `number`  
+**Default:** `0.7`
+
+The probability that a tag fits above which a missing tag is suggested.
+
+### `flagBelow`
+
+**Type:** `number`  
+**Default:** `0.2`
+
+The probability that a tag fits below which a declared tag is reported.
+
+## `topics()`
+
+```js
+import { topics } from "starlight-compass";
+
+topics({
+  topics: [
+    { label: "Guides", link: "/guides/", description: "Task-oriented instructions" },
+    { label: "Reference", link: "/reference/", description: "Options, APIs and commands" },
+  ],
+});
+```
+
+Checks that pages belong to the topic of their section, e.g. the topics of [`starlight-sidebar-topics`](https://github.com/HiDeoo/starlight-sidebar-topics). The topic of a page is the one whose `link` appears in its pathname, so links work below a base path or a locale prefix, and the longest matching link wins. Pages outside of every topic are skipped.
+
+### `topics`
+
+**Type:** `{ label: string; link: string; description: string }[]`
+
+The topics of the documentation, at least two. The `description` helps the provider understand what belongs to the topic.
+
+### `minConfidence`
+
+**Type:** `number`  
+**Default:** `0.6`
+
+The confidence below which a mismatch is reported as unclear (`info`) instead of as a warning.
+
+## `blog()`
+
+```js
+import { blog } from "starlight-compass";
+
+blog({ prefix: "blog" });
+```
+
+Reviews blog posts, e.g. the ones of [`starlight-blog`](https://github.com/HiDeoo/starlight-blog): whether the title is informative, whether the `excerpt` or `description` works as a teaser without being clickbait, and whether the post has a teaser and `tags`.
+
+### `prefix`
+
+**Type:** `string`  
+**Default:** `"blog"`
+
+The content collection ID prefix of the blog posts, matching the `prefix` option of `starlight-blog`.
+
+### `flagBelow`
+
+**Type:** `number`  
+**Default:** `0.5`
+
+The probability that the title or the teaser is good below which it is reported.
+
 ## `CompassRule`
 
 :::caution
@@ -42,17 +288,27 @@ The rule API is experimental and may change in minor releases before `1.0`.
 ```ts
 interface CompassRule {
   name: string;
-  getQuestions(page: CompassPage): Record<string, CompassQuestion> | undefined;
+  getQuestions(
+    page: CompassPage,
+    context: CompassRuleContext
+  ): Record<string, CompassQuestion> | undefined;
   getResult(
     page: CompassPage,
-    answers: Record<string, CompassAnswer>
+    answers: Record<string, CompassAnswer>,
+    context: CompassRuleContext
   ): { findings: CompassFinding[]; summary?: string };
 }
 ```
 
 - `name`: a unique name, shown in reports and in the dev toolbar.
-- `getQuestions()`: returns the [questions](/reference/providers/#questions-and-answers) to ask, or `undefined` to skip the page.
+- `getQuestions()`: returns the [questions](/reference/providers/#questions-and-answers) to ask, or `undefined` to skip the page. Returning an empty object still calls `getResult()`, which allows findings that need no provider, like a missing frontmatter field.
 - `getResult()`: receives the answers under the same keys and returns findings and an optional one-sentence summary.
+
+### `CompassRuleContext`
+
+| Property | Type            | Description                                                                                                                              |
+| -------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `pages`  | `CompassPage[]` | Every known page, for rules comparing pages. Audits know all pages, while the dev toolbar only knows the pages opened since the server started. |
 
 ### `CompassPage`
 
@@ -61,8 +317,11 @@ interface CompassRule {
 | `body`     | `string`                  | The Markdown or MDX source, without frontmatter.    |
 | `data`     | `Record<string, unknown>` | The validated frontmatter.                          |
 | `filePath` | `string \| undefined`     | The source file path relative to the project root.  |
+| `headings` | `string[]`                | The text of the headings on the page.               |
 | `id`       | `string`                  | The content collection entry ID.                    |
+| `locale`   | `string \| undefined`     | The locale of the page, if the site has locales.    |
 | `pathname` | `string`                  | The URL pathname of the page.                       |
+| `sidebar`  | `{ groups: string[]; siblings: string[] } \| undefined` | The labels of the sidebar groups containing the page, and of the other links in the innermost group. |
 
 ### `CompassFinding`
 
