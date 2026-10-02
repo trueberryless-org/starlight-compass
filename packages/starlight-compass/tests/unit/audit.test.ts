@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { runAudit } from "../../libs/audit";
 import { validateConfig } from "../../libs/config";
+import { typesafe } from "../../providers/typesafe";
 import { getTestClient, getTestPage } from "./utils";
 
 const pages = [
@@ -34,7 +35,7 @@ describe("runAudit", () => {
     const logger = getLogger();
 
     await expect(
-      runAudit(pages, getContext({ config: validateConfig({}), logger }))
+      runAudit(pages, getContext({ config: validateConfig({ provider: typesafe() }), logger }))
     ).rejects.toThrow("Documentation audit failed.");
     expect(logger.error).toHaveBeenCalledWith("Documentation audit failed.");
     expect(
@@ -45,14 +46,14 @@ describe("runAudit", () => {
   });
 
   test("does not fail when `failOn` is `never`", async () => {
-    const config = validateConfig({ audit: { failOn: "never" } });
+    const config = validateConfig({ audit: { failOn: "never" }, provider: typesafe() });
 
     await expect(runAudit(pages, getContext({ config }))).resolves.toBeUndefined();
   });
 
   test("persists responses between audits", async () => {
     const client = getTestClient();
-    const config = validateConfig({ audit: { failOn: "never" } });
+    const config = validateConfig({ audit: { failOn: "never" }, provider: typesafe() });
 
     await runAudit(pages, getContext({ client, config }));
     await runAudit(pages, getContext({ client, config }));

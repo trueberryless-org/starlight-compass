@@ -1,5 +1,5 @@
 ---
-title: How it works
+title: How Compass works
 description: Why Starlight Compass uses typed AI decisions, when it runs, and what it sends.
 diataxis: explanation
 ---
@@ -15,16 +15,19 @@ Compass asks _typed questions_ instead: pick one of these options, rate this on 
 Compass separates _what_ to ask from _who_ answers:
 
 - [Rules](/reference/rules/) decide which questions to ask about a page and how to interpret the answers, like the [`diataxis`](/concepts/diataxis/) rule.
-- [Providers](/reference/providers/) answer the questions, like [`typesafe()`](/reference/providers/#typesafe).
+- [Providers](/reference/providers/) answer the questions.
 
-Typed questions are not specific to one vendor. As more models of this kind appear, a new provider can answer the same rules. Rules can also come from outside Compass, for example to review the frontmatter of other Starlight plugins, as shown in [Write a custom rule](/guides/write-a-custom-rule/).
+A provider is named after the API it speaks, not after the model behind it. [`typesafe()`](/reference/providers/#typesafe) speaks the API of TypeSafe's models, which are built for typed answers. [`openaiCompatible()`](/reference/providers/#openaicompatible) speaks the chat completions API that OpenAI, OpenRouter, DeepSeek, Ollama and many others implement, so it covers all of them with a `baseUrl` and a `model`. When another vendor offers models that answer typed questions, it gets its own provider, or you [write one](/guides/write-a-custom-provider/). Rules never change, because they only describe questions.
+
+Rules can also come from outside Compass, for example to review the frontmatter of your own site, as shown in [Write a custom rule](/guides/write-a-custom-rule/).
 
 ## When Compass runs
 
-A build should stay fast, deterministic and offline. Compass only calls a provider in two situations:
+A build should stay fast, deterministic and offline. Compass only calls a provider in these situations:
 
 - **In the dev toolbar**, when the provider is configured, e.g. through a `TYPESAFE_API_KEY` in a `.env` file. Each page you open is reviewed once, and again whenever its content changes. This is where feedback is most useful: while you write.
 - **In audits**, when `astro build` runs with [`STARLIGHT_COMPASS_AUDIT=1`](/reference/configuration/#starlight_compass_audit), typically [in CI](/guides/audit-in-ci/).
+- **When readers use** [ask the docs](/guides/ask-the-docs/) or [send feedback](/guides/triage-feedback/), from an endpoint on your server.
 
 Regular builds and deployments never call a provider and need no API key.
 
@@ -36,4 +39,6 @@ The cost stays small: at the time of writing, Jev charges $0.042 per million inp
 
 ## What is sent
 
-For each page, Compass sends the title, the description, and the Markdown or MDX source without frontmatter to the provider. Check your provider's terms, e.g. [TypeSafe's legal documents](https://docs.typesafe.ai/legal), before reviewing private documentation.
+For each page, Compass sends the title, the description, and the Markdown or MDX source without frontmatter to the provider. Some rules add context to their questions: [`sidebar()`](/reference/rules/#sidebar) sends the labels of the sidebar group, and [`duplicates()`](/reference/rules/#duplicates) sends the title and the start of the most similar pages.
+
+The [ask the docs](/guides/ask-the-docs/) and [feedback](/guides/triage-feedback/) features send what readers type, together with the title and start of the pages found by their search, to the provider from your own endpoint. Check your provider's terms, e.g. [TypeSafe's legal documents](https://docs.typesafe.ai/legal), before reviewing private documentation.

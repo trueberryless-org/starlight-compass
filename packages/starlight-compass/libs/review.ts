@@ -1,6 +1,16 @@
 import { type CompassCache, getCompassCacheKey } from "./cache";
-import type { CompassAnswer, CompassClient, CompassQuestion } from "./provider";
-import type { CompassFinding, CompassPage, CompassRule } from "./rule";
+import type {
+  CompassAnswer,
+  CompassClient,
+  CompassQuestion,
+  CompassResponse,
+} from "./provider";
+import type {
+  CompassFinding,
+  CompassPage,
+  CompassRule,
+  CompassRuleContext,
+} from "./rule";
 
 const QUESTION_KEY_SEPARATOR = "/";
 
@@ -11,26 +21,32 @@ export async function reviewPage(
   page: CompassPage,
   context: ReviewContext
 ): Promise<CompassReview> {
-  const { cache, client, rules } = context;
+  const { cache, client, pages = [page], rules } = context;
+  const ruleContext = { pages };
 
-  const rulesQuestions = getRulesQuestions(page, rules);
+  const rulesQuestions = getRulesQuestions(page, rules, ruleContext);
   if (rulesQuestions.size === 0) return { model: undefined, page, results: [] };
 
-  const request = {
-    questions: getRequestQuestions(rulesQuestions),
-    state: getPageState(page),
-  };
-  const key = getCompassCacheKey(client.id, request);
-  const response = cache.get(key) ?? (await client.ask(request));
-  cache.set(key, response);
+  const questions = getRequestQuestions(rulesQuestions);
+  let response: CompassResponse | undefined;
+  if (Object.keys(questions).length > 0) {
+    const request = { questions, state: getPageState(page) };
+    const key = getCompassCacheKey(client.id, request);
+    response = cache.get(key) ?? (await client.ask(request));
+    cache.set(key, response);
+  }
 
   const results = [...rulesQuestions.keys()].map((rule) => ({
     documentationUrl: rule.documentationUrl,
     rule: rule.name,
-    ...rule.getResult(page, getRuleAnswers(rule, response.answers)),
+    ...rule.getResult(
+      page,
+      getRuleAnswers(rule, response?.answers ?? {}),
+      ruleContext
+    ),
   }));
 
-  return { model: response.model, page, results };
+  return { model: response?.model, page, results };
 }
 
 export function getReviewFindings(
@@ -41,16 +57,19 @@ export function getReviewFindings(
   );
 }
 
-function getRulesQuestions(page: CompassPage, rules: CompassRule[]) {
+function getRulesQuestions(
+  page: CompassPage,
+  rules: CompassRule[],
+  context: CompassRuleContext
+) {
   const rulesQuestions = new Map<
     CompassRule,
     Record<string, CompassQuestion>
   >();
 
   for (const rule of rules) {
-    const questions = rule.getQuestions(page);
-    if (questions && Object.keys(questions).length > 0)
-      rulesQuestions.set(rule, questions);
+    const questions = rule.getQuestions(page, context);
+    if (questions) rulesQuestions.set(rule, questions);
   }
 
   return rulesQuestions;
@@ -111,5 +130,7 @@ export interface CompassReviewFinding extends CompassFinding {
 interface ReviewContext {
   cache: CompassCache;
   client: CompassClient;
+  /** Every page known, passed to rules that compare pages. Defaults to the reviewed page only. */
+  pages?: CompassPage[];
   rules: CompassRule[];
 }

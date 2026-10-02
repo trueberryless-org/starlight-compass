@@ -1,0 +1,82 @@
+---
+title: Set up an OpenAI-compatible model
+description: Use OpenAI, OpenRouter, DeepSeek, Ollama or any service implementing the chat completions API as the provider of Compass.
+diataxis: how-to
+---
+
+import { Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+Many services and servers implement the OpenAI chat completions API, so one provider covers them all: you only choose the service and the model. Compass asks the model for probabilities as JSON and validates them.
+
+:::caution
+Chat models state probabilities they have not calibrated, and they can change between model versions. Use this provider for reviews in the dev toolbar, and prefer [TypeSafe](/getting-started/typesafe/) when you fail builds on findings.
+:::
+
+## Prerequisites
+
+- Compass [installed](/getting-started/) in your Starlight site.
+- An API key for a service that implements the API, or a local server like [Ollama](https://ollama.com) running a model with support for structured outputs.
+
+## Configure the provider
+
+<Steps>
+
+1. Add the plugin with the [`openaiCompatible()`](/reference/providers/#openaicompatible) provider to your Starlight configuration. Choose the service:
+
+   <Tabs syncKey="service">
+
+   <TabItem label="OpenAI">
+
+   ```js title="astro.config.mjs"
+   import starlightCompass, { openaiCompatible } from "starlight-compass";
+
+   starlightCompass({
+     provider: openaiCompatible({ model: "gpt-4o-mini" }),
+   });
+   ```
+
+   </TabItem>
+
+   <TabItem label="OpenRouter">
+
+   ```js title="astro.config.mjs"
+   import starlightCompass, { openaiCompatible } from "starlight-compass";
+
+   starlightCompass({
+     provider: openaiCompatible({
+       baseUrl: "https://openrouter.ai/api/v1",
+       model: "deepseek/deepseek-chat",
+     }),
+   });
+   ```
+
+   </TabItem>
+
+   <TabItem label="Ollama">
+
+   ```js title="astro.config.mjs"
+   import starlightCompass, { openaiCompatible } from "starlight-compass";
+
+   starlightCompass({
+     provider: openaiCompatible({
+       baseUrl: "http://localhost:11434/v1",
+       model: "llama3.1",
+     }),
+   });
+   ```
+
+   </TabItem>
+
+   </Tabs>
+
+2. Create a `.env` file in your project root with your API key, and make sure `.env` is listed in your `.gitignore` file. Local servers like Ollama need no key, so skip this step for them.
+
+   ```sh title=".env"
+   OPENAI_API_KEY=sk-...
+   ```
+
+   The provider reads the `OPENAI_API_KEY` variable whatever the service is. Pass the [`apiKey`](/reference/providers/#apikey-1) option to read another variable.
+
+</Steps>
+
+Next, [review your first page](/getting-started/review-your-first-page/).

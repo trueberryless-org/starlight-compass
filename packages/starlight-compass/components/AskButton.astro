@@ -1,0 +1,131 @@
+---
+/**
+ * A button with a sparkle icon that opens a dialog with the `AskDocs` form. Rendered next to the search field when
+ * the `ask` option is enabled.
+ *
+ * @see https://starlight-compass.netlify.app/guides/ask-the-docs/
+ */
+import { ask } from "virtual:starlight-compass/ask-config";
+
+import AskDocs from "./AskDocs.astro";
+
+const t = Astro.locals.t as (key: string) => string;
+---
+
+<compass-ask-button>
+  <button
+    aria-label={t("starlightCompass.ask.open")}
+    class="open"
+    title={t("starlightCompass.ask.open")}
+    type="button"
+  >
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="20"
+      stroke="currentColor"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="1.75"
+      viewBox="0 0 24 24"
+      width="20"
+    >
+      <path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 15l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"></path>
+    </svg>
+  </button>
+  <dialog aria-label={t("starlightCompass.ask.open")} class="not-content">
+    <button
+      aria-label={t("starlightCompass.ask.close")}
+      class="close"
+      type="button"
+    >
+      ×
+    </button>
+    <AskDocs endpoint={ask.route} />
+  </dialog>
+</compass-ask-button>
+
+<script>
+  class CompassAskButton extends HTMLElement {
+    connectedCallback() {
+      const dialog = this.querySelector("dialog");
+      const open = this.querySelector<HTMLElement>("button.open");
+      const close = this.querySelector<HTMLElement>("button.close");
+      if (!dialog || !open || !close) return;
+
+      open.addEventListener("click", () => {
+        dialog.showModal();
+        dialog.querySelector("input")?.focus();
+      });
+      close.addEventListener("click", () => dialog.close());
+      // Clicks on the backdrop target the dialog itself, and clicks on its content target a child.
+      dialog.addEventListener("click", (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+    }
+  }
+
+  customElements.define("compass-ask-button", CompassAskButton);
+</script>
+
+<style>
+  compass-ask-button {
+    display: contents;
+  }
+  /* Matches the height of the search button, which is only an icon on small screens. */
+  .open {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: var(--sl-color-gray-1);
+    cursor: pointer;
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 2.5rem;
+    justify-content: center;
+    width: 2.5rem;
+  }
+  @media (min-width: 50rem) {
+    .open {
+      background-color: var(--sl-color-black);
+      border: 1px solid var(--sl-color-gray-5);
+      border-radius: 0.5rem;
+      color: var(--sl-color-gray-2);
+      margin-inline-start: 0.5rem;
+    }
+    .open:hover {
+      border-color: var(--sl-color-gray-2);
+      color: var(--sl-color-white);
+    }
+  }
+  dialog {
+    background: var(--sl-color-bg-nav);
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 0.75rem;
+    box-shadow: var(--sl-shadow-lg);
+    color: var(--sl-color-text);
+    margin: 10vh auto auto;
+    max-width: min(40rem, calc(100vw - 2rem));
+    padding: 1.25rem 1.5rem 1rem;
+    position: fixed;
+    width: 100%;
+  }
+  dialog::backdrop {
+    background: var(--sl-color-backdrop-overlay);
+    backdrop-filter: blur(0.25rem);
+  }
+  .close {
+    background: transparent;
+    border: 0;
+    color: var(--sl-color-gray-2);
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+  }
+  dialog :global(compass-ask) {
+    margin-block: 0;
+  }
+</style>

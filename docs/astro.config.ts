@@ -1,6 +1,16 @@
+import netlify from "@astrojs/netlify";
+import node from "@astrojs/node";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
-import starlightCompass from "starlight-compass";
+import starlightCompass, {
+  diataxis,
+  duplicates,
+  metadata,
+  quality,
+  sidebar,
+  typesafe,
+  unfinished,
+} from "starlight-compass";
 
 const site =
   (process.env.CONTEXT === "deploy-preview" ||
@@ -9,6 +19,8 @@ const site =
     : process.env.URL) ?? "https://starlight-compass.netlify.app";
 
 export default defineConfig({
+  // Netlify sets `NETLIFY` while building. Elsewhere, `pnpm preview` serves the site and its endpoints with Node.js.
+  adapter: process.env.NETLIFY ? netlify() : node({ mode: "standalone" }),
   site,
   integrations: [
     starlight({
@@ -37,17 +49,40 @@ export default defineConfig({
         baseUrl:
           "https://github.com/trueberryless-org/starlight-compass/edit/main/docs/",
       },
-      plugins: [starlightCompass()],
+      plugins: [
+        starlightCompass({
+          ask: true,
+          provider: typesafe(),
+          rules: [
+            diataxis(),
+            quality(),
+            metadata(),
+            unfinished(),
+            duplicates(),
+            sidebar(),
+          ],
+        }),
+      ],
       sidebar: [
         {
           label: "Start Here",
-          items: [{ slug: "getting-started" }],
+          items: [
+            { slug: "getting-started" },
+            { slug: "getting-started/typesafe" },
+            { slug: "getting-started/openai-compatible" },
+            { slug: "getting-started/review-your-first-page" },
+          ],
         },
         {
           label: "Guides",
           items: [
             { slug: "guides/audit-in-ci" },
             { slug: "guides/write-a-custom-rule" },
+            { slug: "guides/write-a-custom-provider" },
+            { slug: "guides/documentation-type-badges" },
+            { slug: "guides/ask-the-docs" },
+            { slug: "guides/set-up-ask-the-docs-yourself" },
+            { slug: "guides/triage-feedback" },
           ],
         },
         {
@@ -55,6 +90,7 @@ export default defineConfig({
           items: [
             { slug: "reference/configuration" },
             { slug: "reference/providers" },
+            { slug: "reference/handlers-and-components" },
             { slug: "reference/rules" },
           ],
         },
@@ -62,8 +98,8 @@ export default defineConfig({
           label: "Concepts",
           items: [
             { slug: "concepts/how-it-works" },
+            { slug: "concepts/ask-the-docs" },
             { slug: "concepts/diataxis" },
-            { slug: "concepts/roadmap" },
           ],
         },
       ],

@@ -1,46 +1,56 @@
 ---
 title: Write a custom rule
-description: Review pages against your own criteria, e.g. the frontmatter of another Starlight plugin.
+description: Review pages against your own criteria, e.g. a frontmatter field of your site.
 diataxis: how-to
 ---
 
 import { Steps } from "@astrojs/starlight/components";
 
-A rule asks typed questions about a page and turns the answers into findings.
-This guide writes a rule that checks whether the `tags` frontmatter field of a page, e.g. added by a tags plugin, matches its content.
+A rule asks typed questions about a page and turns the answers into findings. This guide writes an `audience` rule for sites whose pages declare an `audience` frontmatter field, and reports pages written for a different audience than they declare.
+
+If a [built-in rule](/reference/rules/) already covers your case, use it instead. Rules are also the way to review the frontmatter of other plugins, like the built-in [`tags()`](/reference/rules/#tags) rule does.
 
 :::caution
 The rule API is experimental and may change in minor releases before `1.0`.
 :::
 
+## Prerequisites
+
+- A Starlight site with [Compass and a provider set up](/getting-started/).
+- Pages declaring `audience: beginner` or `audience: advanced` in their frontmatter. Add the field to your [content collection schema](https://starlight.astro.build/guides/frontmatter/#customize-frontmatter-schema) so that Astro keeps it.
+
+## Write the rule
+
 <Steps>
 
-1. Create a function returning a [`CompassRule`](/reference/rules/#compassrule) object:
+1. Create a function returning a [`CompassRule`](/reference/rules/#compassrule) object. The rule asks which audience a page is written for, and compares the answer with the declared one:
 
    ```ts title="compass-rules.ts"
    import type { CompassRule } from "starlight-compass";
 
-   export function tagsRule(allowedTags: string[]): CompassRule {
+   export function audience(): CompassRule {
      return {
-       name: "tags",
+       name: "audience",
        getQuestions(page) {
-         const tags = page.data["tags"];
-         if (!Array.isArray(tags) || tags.length === 0) return;
+         if (!page.data["audience"]) return;
 
          return {
-           topic: {
+           audience: {
              type: "choice",
-             instructions: "Which tag best describes the main topic of this page?",
-             options: Object.fromEntries(allowedTags.map((tag) => [tag, null])),
+             instructions: "Which audience is this page written for?",
+             options: {
+               advanced: "Readers who know the basics and want details, trade-offs or edge cases.",
+               beginner: "Readers who are new to the topic and need terms explained.",
+             },
            },
          };
        },
        getResult(page, answers) {
-         const { topic } = answers;
-         if (topic?.type !== "choice") return { findings: [] };
+         const answer = answers["audience"];
+         if (answer?.type !== "choice") return { findings: [] };
 
-         const tags = page.data["tags"] as string[];
-         if (tags.includes(topic.choice) || topic.confidence < 0.6) {
+         const { choice, confidence } = answer;
+         if (choice === page.data["audience"] || confidence < 0.7) {
            return { findings: [] };
          }
 
@@ -48,7 +58,7 @@ The rule API is experimental and may change in minor releases before `1.0`.
            findings: [
              {
                level: "warning",
-               message: `The page is mostly about \`${topic.choice}\`, which is not one of its tags.`,
+               message: `Declared for the audience \`${page.data["audience"]}\` but reads like it is written for \`${choice}\`.`,
              },
            ],
          };
@@ -57,28 +67,37 @@ The rule API is experimental and may change in minor releases before `1.0`.
    }
    ```
 
-   Ask narrow questions and check the answer's confidence before reporting a finding, so that uncertain answers don't produce noise.
+   Ask narrow questions and check the answer's confidence before reporting a finding, so that uncertain answers don't produce noise. Returning `undefined` from `getQuestions()` skips the page.
 
-2. Add the rule to your configuration. Keep the built-in rules you want to use, as setting `rules` replaces the defaults:
+2. Add the rule to your configuration. Keep the built-in rules you want to use, as setting [`rules`](/reference/configuration/#rules) replaces the defaults:
 
-   ```js {3,9}
+   ```js {3,10}
    // astro.config.mjs
-   import starlightCompass, { diataxis } from "starlight-compass";
-   import { tagsRule } from "./compass-rules";
+   import starlightCompass, { diataxis, typesafe } from "starlight-compass";
+   import { audience } from "./compass-rules";
 
    export default defineConfig({
      integrations: [
        starlight({
          plugins: [
-           starlightCompass({ rules: [diataxis(), tagsRule(["cli", "config", "deployment"])] }),
+           starlightCompass({
+             provider: typesafe(),
+             rules: [diataxis(), audience()],
+           }),
          ],
        }),
      ],
    });
    ```
 
-3. Open a page with tags and check the new `tags` section in the Compass dev toolbar window.
+3. Open a page that declares an audience and check the new `audience` section in the Compass window of the dev toolbar.
 
 </Steps>
 
-Questions of all rules are sent to the provider in a [single request](/concepts/how-it-works/#one-request-per-page), so adding a rule adds almost no latency.
+The questions of all rules are sent to the provider in a [single request](/concepts/how-it-works/#one-request-per-page), so adding a rule adds almost no latency.
+
+## Go further
+
+- Return an empty object from `getQuestions()` to report findings that need no provider, like a missing frontmatter field. [`metadata()`](/reference/rules/#metadata) does this for missing descriptions.
+- Use the `context` argument to compare a page with all other pages, like [`duplicates()`](/reference/rules/#duplicates) does.
+- Use `score` questions for rubrics, and `boolean` questions for yes-or-no decisions. See [Questions and answers](/reference/providers/#questions-and-answers).

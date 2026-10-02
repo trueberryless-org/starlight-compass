@@ -1,0 +1,46 @@
+---
+title: Set up TypeSafe
+description: Use TypeSafe's Jev, which answers typed questions with calibrated probabilities, as the provider of Compass.
+diataxis: how-to
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+[TypeSafe](https://docs.typesafe.ai) offers System One models like Jev, which answer typed questions directly with calibrated probabilities. That is what [rules](/reference/rules/) ask for, so this provider gives the most reliable findings, especially when you [audit in CI](/guides/audit-in-ci/).
+
+## Prerequisites
+
+- Compass [installed](/getting-started/) in your Starlight site.
+- A TypeSafe API key. Jev is in early access. [Create a key](https://console.typesafe.ai/settings/keys) in the TypeSafe console.
+
+## Configure the provider
+
+<Steps>
+
+1. Create a `.env` file in your project root with your API key. Make sure `.env` is listed in your `.gitignore` file.
+
+   ```sh title=".env"
+   TYPESAFE_API_KEY=apikey_...
+   ```
+
+2. Add the plugin with the [`typesafe()`](/reference/providers/#typesafe) provider to your Starlight configuration:
+
+   ```diff lang="js"
+   // astro.config.mjs
+   import starlight from "@astrojs/starlight";
+   import { defineConfig } from "astro/config";
+   +import starlightCompass, { typesafe } from "starlight-compass";
+
+   export default defineConfig({
+     integrations: [
+       starlight({
+   +      plugins: [starlightCompass({ provider: typesafe() })],
+         title: "My Docs",
+       }),
+     ],
+   });
+   ```
+
+</Steps>
+
+Pin a model version with `typesafe({ model: "jev-1.13.0" })` to get the same answers over time. Next, [review your first page](/getting-started/review-your-first-page/).

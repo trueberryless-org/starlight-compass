@@ -7,7 +7,14 @@
   "type": "module",
   "exports": {
     ".": "./index.ts",
+    "./components/AskDocs.astro": "./components/AskDocs.astro",
+    "./components/Feedback.astro": "./components/Feedback.astro",
+    "./components/AskButton.astro": "./components/AskButton.astro",
+    "./components/PageTitle.astro": "./components/PageTitle.astro",
+    "./components/Search.astro": "./components/Search.astro",
+    "./handlers": "./handlers.ts",
     "./middleware": "./middleware.ts",
+    "./routes/ask": "./routes/ask.ts",
     "./schema": "./schema.ts",
     "./toolbar": "./toolbar/app.ts",
     "./package.json": "./package.json"
@@ -39,6 +46,7 @@
     "diataxis",
     "ai",
     "typesafe",
+    "llm",
     "jev",
     "dev-toolbar",
     "documentation",

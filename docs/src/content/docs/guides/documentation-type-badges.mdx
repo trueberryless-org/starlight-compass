@@ -1,0 +1,68 @@
+---
+title: Show documentation type badges
+description: Tell readers upfront whether a page is a tutorial, a how-to guide, reference or an explanation.
+diataxis: how-to
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+Compass shows a small badge below the title of every page that declares its [Diátaxis](/concepts/diataxis/) type, so readers know what to expect before they start reading.
+
+## Prerequisites
+
+- A Starlight site with [Compass and a provider set up](/getting-started/).
+
+## Show the badges
+
+<Steps>
+
+1. Extend your docs schema with `compassSchema()`, so that the `diataxis` frontmatter field is kept:
+
+   ```ts title="src/content.config.ts"
+   import { docsSchema } from "@astrojs/starlight/schema";
+   import { compassSchema } from "starlight-compass/schema";
+
+   docsSchema({ extend: compassSchema() });
+   ```
+
+2. Declare the type of a page in its frontmatter:
+
+   ```md title="src/content/docs/guides/deploy.md" {3}
+   ---
+   title: Deploy your site
+   diataxis: how-to
+   ---
+   ```
+
+3. Start the dev server. The page shows a badge below its title. Hover over it to read a short description of the type.
+
+</Steps>
+
+Pages without a declared type, or with `diataxis: false`, show no badge. The `diataxis` rule can [suggest the type](/reference/rules/#diataxis) of pages without one.
+
+## Change the labels
+
+The labels are [Starlight UI strings](https://starlight.astro.build/guides/i18n/#using-ui-translations), so you can translate or reword them in a `src/content/i18n/en.json` file:
+
+```json title="src/content/i18n/en.json"
+{
+  "starlightCompass.badge.how-to": "Guide",
+  "starlightCompass.badge.how-to.description": "Steps to solve a specific problem."
+}
+```
+
+Every type has a label under `starlightCompass.badge.<type>` and a description under `starlightCompass.badge.<type>.description`, where `<type>` is `tutorial`, `how-to`, `reference` or `explanation`.
+
+## Combine with your own `PageTitle`
+
+Compass adds the badges by overriding Starlight's `PageTitle` component. If you already override it, Compass skips the badges and logs a warning. Render the Compass component from your override instead:
+
+```astro title="src/components/PageTitle.astro"
+---
+import CompassPageTitle from "starlight-compass/components/PageTitle.astro";
+---
+
+<CompassPageTitle {...Astro.props}><slot /></CompassPageTitle>
+```
+
+To turn the badges off, set [`badges`](/reference/configuration/#badges) to `false`.

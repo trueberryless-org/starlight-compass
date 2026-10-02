@@ -1,0 +1,64 @@
+---
+title: Triage reader feedback
+description: Classify free-text feedback into typos, bugs, missing information and confusing content, and forward it where you need it.
+diataxis: how-to
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+The `Feedback` component lets readers describe what could be better on a page. Compass classifies every message as a typo, a bug, missing information, confusing content or something else, and hands it to a function you write, so you can label an issue, notify a channel or feed a dashboard.
+
+## Prerequisites
+
+- An API key for a [provider](/reference/providers/).
+- A place to run server code, like an [Astro adapter](https://docs.astro.build/en/guides/on-demand-rendering/) or serverless functions.
+
+## Add the feedback form
+
+<Steps>
+
+1. Create an endpoint that triages feedback. This one opens a labeled GitHub issue:
+
+   ```ts title="src/pages/api/feedback.ts"
+   import type { APIRoute } from "astro";
+   import { createFeedbackHandler } from "starlight-compass/handlers";
+
+   export const prerender = false;
+
+   const handler = createFeedbackHandler({
+     async onFeedback({ category, confidence, feedback, pathname }) {
+       const response = await fetch(
+         "https://api.github.com/repos/my-org/my-docs/issues",
+         {
+           body: JSON.stringify({
+             body: `${feedback}\n\nPage: ${pathname}\nConfidence: ${Math.round(confidence * 100)}%`,
+             labels: [`feedback: ${category}`],
+             title: `Feedback on ${pathname}`,
+           }),
+           headers: {
+             Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+             "Content-Type": "application/json",
+           },
+           method: "POST",
+         }
+       );
+       if (!response.ok) throw new Error(`GitHub responded with ${response.status}.`);
+     },
+   });
+
+   export const POST: APIRoute = ({ request }) => handler(request);
+   ```
+
+2. Add the component to your pages, e.g. in a [`Footer` override](https://starlight.astro.build/guides/overriding-components/) or at the end of a page:
+
+   ```mdx
+   import Feedback from "starlight-compass/components/Feedback.astro";
+
+   <Feedback endpoint="/api/feedback" />
+   ```
+
+</Steps>
+
+The `category` is one of `"typo"`, `"bug"`, `"missing-information"`, `"confusing-content"` or `"other"`. Check the `confidence` before you rely on the category, e.g. to route uncertain messages to a general inbox. If `onFeedback()` throws, the reader sees an error, so they can try again.
+
+Feedback is text from strangers. Treat it as untrusted data when you forward it, and [limit the requests](/guides/ask-the-docs/#limit-the-cost) to the endpoint.

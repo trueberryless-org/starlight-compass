@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 
 import type { CompassCache } from "../../libs/cache";
 import { getReviewFindings, reviewPage } from "../../libs/review";
-import type { CompassRule } from "../../libs/rule";
+import type { CompassPage, CompassRule } from "../../libs/rule";
 import { diataxis } from "../../rules/diataxis";
 import { getTestClient, getTestPage } from "./utils";
 
@@ -27,6 +27,30 @@ describe("reviewPage", () => {
       { rule: "diataxis", summary: "Reads like a how-to guide (90% confidence)." },
       { rule: "custom", summary: "Answered ." },
     ]);
+  });
+
+  test("calls rules without questions and skips the provider", async () => {
+    const client = getTestClient();
+    const rule: CompassRule = {
+      getQuestions: () => ({}),
+      getResult: () => ({ findings: [{ level: "warning", message: "Local finding." }] }),
+      name: "local",
+    };
+
+    const review = await reviewPage(getTestPage(), { cache: new Map(), client, rules: [rule] });
+
+    expect(client.ask).not.toHaveBeenCalled();
+    expect(review.results[0]?.findings).toEqual([{ level: "warning", message: "Local finding." }]);
+  });
+
+  test("passes every page to the rules", async () => {
+    const pages = [getTestPage(), getTestPage({ pathname: "/other/" })];
+    const getQuestions = vi.fn(() => undefined);
+    const rule: CompassRule = { getQuestions, getResult: () => ({ findings: [] }), name: "pages" };
+
+    await reviewPage(pages[0] as CompassPage, { cache: new Map(), client: getTestClient(), pages, rules: [rule] });
+
+    expect(getQuestions).toHaveBeenCalledWith(pages[0], { pages });
   });
 
   test("sends the title, description and body as state", async () => {

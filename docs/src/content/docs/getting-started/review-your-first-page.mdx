@@ -1,0 +1,55 @@
+---
+title: Review your first page
+description: See what a page reads like in the Astro dev toolbar, declare its documentation type, and watch Compass catch drift.
+diataxis: tutorial
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+In this tutorial, you review a page of your Starlight site in the dev toolbar and declare its documentation type, so Compass can warn you when the page drifts.
+
+## Prerequisites
+
+Compass [installed](/getting-started/) with a provider, either [TypeSafe](/getting-started/typesafe/) or an [OpenAI-compatible model](/getting-started/openai-compatible/).
+
+## Review the page
+
+<Steps>
+
+1. Start the development server:
+
+   ```sh
+   npm run dev
+   ```
+
+2. Open any documentation page in your browser and click the compass icon in the Astro dev toolbar at the bottom of the page.
+
+   The Compass window shows the type the page reads like, for example "Reads like a how-to guide (92% confidence)", and suggests declaring it.
+
+3. Declare the suggested type in the frontmatter of the page:
+
+   ```md title="src/content/docs/guides/deploy.md" ins={3}
+   ---
+   title: Deploy your site
+   diataxis: how-to
+   ---
+   ```
+
+4. Save the file. The page reloads, Compass reviews it again, and the suggestion disappears.
+
+5. To see what drift looks like, change the value to `diataxis: reference` and save again.
+
+   The toolbar icon now shows a red dot, and the Compass window reports an error: the page is declared as reference but reads like a how-to guide. Set the value back to `how-to` when you are done.
+
+</Steps>
+
+## Next steps
+
+You reviewed a page while writing it and declared its type. From here, you can:
+
+- [Audit every page in CI](/guides/audit-in-ci/) to catch drift in pull requests.
+- Add more [rules](/reference/rules/), like [`quality()`](/reference/rules/#quality) for rubrics or [`duplicates()`](/reference/rules/#duplicates) for pages covering the same topic.
+- [Show documentation type badges](/guides/documentation-type-badges/) to your readers.
+- [Let readers ask the docs](/guides/ask-the-docs/) from a sparkle button next to the search.
+- Learn [how Compass decides](/concepts/diataxis/) whether a page is a tutorial, a how-to guide, reference or explanation.
+- Browse the [configuration reference](/reference/configuration/).

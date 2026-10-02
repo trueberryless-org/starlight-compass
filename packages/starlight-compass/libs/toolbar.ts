@@ -34,6 +34,7 @@ export function setupToolbarServer(
         const review = await reviewPage(page, {
           cache: await cache,
           client,
+          pages: [...getCompassPages().values()],
           rules: config.rules,
         });
         await writeCompassCache(cacheDir, await cache);

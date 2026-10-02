@@ -1,0 +1,76 @@
+---
+title: Write a custom provider
+description: Answer the typed questions of rules with your own API or model.
+diataxis: how-to
+---
+
+import { Steps } from "@astrojs/starlight/components";
+
+A provider receives the typed questions of all [rules](/reference/rules/) for a page and returns an answer for each. This guide writes a provider for an in-house service that rates documentation, to show the mechanics.
+
+If your service implements the OpenAI chat completions API, use [`openaiCompatible()`](/reference/providers/#openaicompatible) instead.
+
+:::caution
+The provider API is experimental and may change in minor releases before `1.0`.
+:::
+
+## Prerequisites
+
+- A Starlight site with [Compass and a provider set up](/getting-started/).
+- An API that can answer yes-or-no, multiple choice or scoring questions with probabilities.
+
+## Write the provider
+
+<Steps>
+
+1. Create a function returning a [`CompassProvider`](/reference/providers/#compassprovider). `createClient()` returns `undefined` while the provider is not configured, and Compass logs the `setupHint`:
+
+   ```ts title="compass-provider.ts"
+   import type { CompassProvider, CompassResponse } from "starlight-compass";
+
+   export function inHouse(): CompassProvider {
+     return {
+       name: "in-house",
+       setupHint: "Set the `IN_HOUSE_TOKEN` environment variable.",
+       createClient({ env }) {
+         const token = env["IN_HOUSE_TOKEN"];
+         if (!token) return;
+
+         return {
+           id: "in-house/v1",
+           async ask({ questions, state }) {
+             const response = await fetch("https://ratings.example.com/answer", {
+               body: JSON.stringify({ questions, state }),
+               headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+               method: "POST",
+             });
+             if (!response.ok) throw new Error(`The service responded with ${response.status}.`);
+
+             return (await response.json()) as CompassResponse;
+           },
+         };
+       },
+     };
+   }
+   ```
+
+   Return an answer for every key of `questions`, in the [shape of its question type](/reference/providers/#questions-and-answers). The `id` is part of the cache key, so change it when your service changes how it answers.
+
+2. Use the provider in your configuration:
+
+   ```js {2,6}
+   // astro.config.mjs
+   import { inHouse } from "./compass-provider";
+
+   starlight({
+     plugins: [starlightCompass({ provider: inHouse() })],
+   });
+   ```
+
+3. Open a page and check that the Compass window of the dev toolbar shows results.
+
+</Steps>
+
+Compass sends the questions of all rules in a [single request](/concepts/how-it-works/#one-request-per-page) and caches the responses, so `ask()` runs once per changed page.
+
+The [`ask`](/reference/configuration/#ask) option only supports the built-in providers. To let readers ask the docs with a custom provider, use the [manual setup](/guides/set-up-ask-the-docs-yourself/).

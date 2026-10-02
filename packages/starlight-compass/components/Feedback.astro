@@ -1,0 +1,134 @@
+---
+/**
+ * A form for readers to send free-text feedback about the current page to the endpoint from
+ * `createFeedbackHandler()`.
+ *
+ * @see https://starlight-compass.netlify.app/guides/triage-feedback/
+ */
+interface Props {
+  /** The URL of the endpoint created with `createFeedbackHandler()`. */
+  endpoint: string;
+}
+
+const { endpoint } = Astro.props;
+const t = Astro.locals.t as (key: string) => string;
+const labels = {
+  error: t("starlightCompass.feedback.error"),
+  thanks: t("starlightCompass.feedback.thanks"),
+};
+---
+
+<compass-feedback
+  class="not-content"
+  data-endpoint={endpoint}
+  data-labels={JSON.stringify(labels)}
+>
+  <form>
+    <label>
+      <span>{t("starlightCompass.feedback.label")}</span>
+      <textarea
+        maxlength="2000"
+        name="feedback"
+        placeholder={t("starlightCompass.feedback.placeholder")}
+        required
+        rows="3"
+      ></textarea>
+    </label>
+    <button type="submit">{t("starlightCompass.feedback.submit")}</button>
+  </form>
+  <p aria-live="polite" class="status"></p>
+</compass-feedback>
+
+<script>
+  class CompassFeedback extends HTMLElement {
+    connectedCallback() {
+      const form = this.querySelector("form");
+      if (!form) return;
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        void this.send(form);
+      });
+    }
+
+    private async send(form: HTMLFormElement) {
+      const labels: Record<string, string> = JSON.parse(
+        this.dataset["labels"] ?? "{}"
+      );
+      const status = this.querySelector(".status");
+      const textarea = form.querySelector("textarea");
+      const button = form.querySelector("button");
+      if (!textarea || !button) return;
+
+      button.disabled = true;
+      try {
+        const response = await fetch(this.dataset["endpoint"] ?? "", {
+          body: JSON.stringify({
+            feedback: textarea.value.trim(),
+            pathname: window.location.pathname,
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        if (!response.ok) throw new Error(`Status ${response.status}`);
+
+        form.reset();
+        if (status) status.textContent = labels["thanks"] ?? "";
+      } catch {
+        if (status) status.textContent = labels["error"] ?? "";
+      } finally {
+        button.disabled = false;
+      }
+    }
+  }
+
+  customElements.define("compass-feedback", CompassFeedback);
+</script>
+
+<style>
+  compass-feedback {
+    display: block;
+    margin-block: 1.5rem;
+  }
+  form {
+    display: grid;
+    gap: 0.75rem;
+    justify-items: start;
+  }
+  label {
+    display: grid;
+    gap: 0.35rem;
+    font-weight: 600;
+    width: 100%;
+  }
+  textarea {
+    background: var(--sl-color-black);
+    border: 1px solid var(--sl-color-gray-4);
+    border-radius: 0.5rem;
+    color: var(--sl-color-white);
+    font: inherit;
+    font-weight: 400;
+    padding: 0.6rem 0.8rem;
+    resize: vertical;
+  }
+  textarea:focus-visible {
+    outline: 2px solid var(--sl-color-accent);
+  }
+  button {
+    background: var(--sl-color-accent);
+    border: 0;
+    border-radius: 0.5rem;
+    color: var(--sl-color-black);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+    padding: 0.6rem 1.1rem;
+  }
+  button:disabled {
+    cursor: wait;
+    opacity: 0.6;
+  }
+  .status {
+    margin: 0.5rem 0 0;
+  }
+</style>

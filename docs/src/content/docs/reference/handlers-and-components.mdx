@@ -1,0 +1,144 @@
+---
+title: Handlers and components
+description: The request handlers and components behind badges, ask the docs and feedback triage.
+diataxis: reference
+---
+
+The [`ask`](/reference/configuration/#ask) option sets up ask the docs for you. This page lists the building blocks behind it, for setups that need more control.
+
+Handlers run on your server and talk to a [provider](/reference/providers/). Components run in the browser of your readers and talk to a handler. Import handlers from `starlight-compass/handlers` and components from `starlight-compass/components/<name>.astro`.
+
+Learn how to use them in [Show documentation type badges](/guides/documentation-type-badges/), [Set up ask the docs yourself](/guides/set-up-ask-the-docs-yourself/) and [Triage reader feedback](/guides/triage-feedback/). Read [how ask the docs works](/concepts/ask-the-docs/) for what the handler does.
+
+## `createAskHandler()`
+
+```ts
+import { createAskHandler } from "starlight-compass/handlers";
+
+const handler = createAskHandler({ maxCandidates: 8, minProbability: 0.3 });
+// handler(request: Request): Promise<Response>
+```
+
+Creates a function that answers `POST` requests from the [`AskDocs`](#askdocs) component with JSON.
+
+| Status | Response                                                                                                      |
+| ------ | ------------------------------------------------------------------------------------------------------------- |
+| `200`  | `{ "status": "answered", "pages": [{ "title", "url", "probability" }] }` or `{ "status": "unanswered" }`.     |
+| `400`  | `{ "error": string }` for invalid requests, e.g. too many candidate pages.                                    |
+| `405`  | Requests using another method than `POST`.                                                                    |
+| `502`  | The provider failed. Details are only logged on the server.                                                   |
+| `503`  | The provider is not configured, e.g. because of a missing API key.                                            |
+
+### `provider`
+
+**Type:** [`CompassProvider`](/reference/providers/#compassprovider)
+
+The provider answering the questions, e.g. [`typesafe()`](/reference/providers/#typesafe). The option is required.
+
+### `env`
+
+**Type:** `Record<string, string | undefined>`  
+**Default:** `process.env`
+
+Environment variables passed to the provider, e.g. to read its API key.
+
+### `maxCandidates`
+
+**Type:** `number`  
+**Default:** `8`
+
+The maximum number of candidate pages accepted in a request. Lower it to limit the cost of every question.
+
+### `maxPages`
+
+**Type:** `number`  
+**Default:** `3`
+
+The maximum number of pages to return, most likely first.
+
+### `minProbability`
+
+**Type:** `number`  
+**Default:** `0.3`
+
+The probability that a page helps to answer the question above which it is returned. Models are conservative when they only see the start of a page, so the default is low.
+
+## `createFeedbackHandler()`
+
+```ts
+import { createFeedbackHandler } from "starlight-compass/handlers";
+
+const handler = createFeedbackHandler({
+  onFeedback({ category, confidence, feedback, pathname }) {
+    // Forward the feedback.
+  },
+});
+```
+
+Creates a function that answers `POST` requests from the [`Feedback`](#feedback) component. It classifies the message with a choice question, calls `onFeedback()`, and responds with `{ "category": string, "confidence": number }`. It uses the same status codes as [`createAskHandler()`](#createaskhandler).
+
+### `onFeedback`
+
+**Type:** `(feedback: TriagedFeedback) => Promise<void> | void`
+
+Receives every triaged feedback. If it throws, the handler responds with status `502`.
+
+| Property     | Type     | Description                                                                                      |
+| ------------ | -------- | ------------------------------------------------------------------------------------------------ |
+| `category`   | `string` | `"typo"`, `"bug"`, `"missing-information"`, `"confusing-content"` or `"other"`.                  |
+| `confidence` | `number` | The confidence in the category, between `0` and `1`.                                             |
+| `feedback`   | `string` | The message of the reader, up to 2,000 characters.                                               |
+| `pathname`   | `string` | The pathname of the page the feedback is about.                                                  |
+
+### `provider` and `env`
+
+Work like the options of [`createAskHandler()`](#provider).
+
+## `AskDocs`
+
+```mdx
+import AskDocs from "starlight-compass/components/AskDocs.astro";
+
+<AskDocs endpoint="/api/ask" candidates={6} />
+```
+
+A form that shortlists pages with Pagefind and lists the pages returned by the endpoint.
+
+| Prop         | Type     | Default | Description                                                                                          |
+| ------------ | -------- | ------- | ---------------------------------------------------------------------------------------------------- |
+| `endpoint`   | `string` |         | The URL of the endpoint created with `createAskHandler()`.                                           |
+| `candidates` | `number` | `6`     | The number of search results sent to the endpoint. Keep it at or below the handler's `maxCandidates`. |
+
+## `AskButton`
+
+```astro
+---
+import AskButton from "starlight-compass/components/AskButton.astro";
+---
+
+<AskButton />
+```
+
+A sparkle button that opens a dialog with the [`AskDocs`](#askdocs) form. It only works with the [`ask`](/reference/configuration/#ask) option, which provides the endpoint. Compass renders it next to the search field by replacing Starlight's `Search` component. Import `starlight-compass/components/Search.astro` for the search field with the button, or `AskButton.astro` alone to place it in your own override.
+
+## `Feedback`
+
+```mdx
+import Feedback from "starlight-compass/components/Feedback.astro";
+
+<Feedback endpoint="/api/feedback" />
+```
+
+A form that sends free-text feedback and the current pathname to the endpoint.
+
+| Prop       | Type     | Description                                                        |
+| ---------- | -------- | ------------------------------------------------------------------ |
+| `endpoint` | `string` | The URL of the endpoint created with `createFeedbackHandler()`.    |
+
+## `PageTitle`
+
+The component that shows [documentation type badges](/guides/documentation-type-badges/). Compass registers it for you unless [`badges`](/reference/configuration/#badges) is `false`. Import `starlight-compass/components/PageTitle.astro` to render it from your own override.
+
+## Translations
+
+The components read their labels from [Starlight UI strings](https://starlight.astro.build/guides/i18n/#using-ui-translations) that start with `starlightCompass.`. Compass provides English labels. Override or translate them in your `src/content/i18n/<locale>.json` files.
